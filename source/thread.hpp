@@ -3,7 +3,7 @@
 #include "memoryPool.hpp"
 #include "mutex.hpp"
 #include "semaphore.hpp"
-#include "timer.hpp"
+#include "tickTimer.hpp"
 #include "txCommon.hpp"
 #include <functional>
 #include <tuple>

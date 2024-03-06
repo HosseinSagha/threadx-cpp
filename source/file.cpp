@@ -7,7 +7,7 @@ File::File(std::string_view fileName, MediaBase &media, const OpenOption option,
     : ThreadX::Native::FX_FILE{}, m_writeNotifyCallback{writeNotifyCallback}
 {
     using namespace ThreadX::Native;
-    Error error{fx_file_open(
+    [[maybe_unused]] Error error{fx_file_open(
         std::addressof(media), this, const_cast<char *>(fileName.data()), static_cast<ThreadX::Uint>(option))};
     assert(error == Error::success);
 

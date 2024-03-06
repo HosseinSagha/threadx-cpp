@@ -1,6 +1,6 @@
 #pragma once
 
-#include "timer.hpp"
+#include "tickTimer.hpp"
 #include "txCommon.hpp"
 #include <array>
 
