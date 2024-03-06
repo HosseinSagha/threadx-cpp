@@ -1,4 +1,4 @@
-# ThreadX Cpp APIs
+# ThreadX Cpp wrapper APIs
 This is written based on [threadx-mcpp](https://github.com/IntergatedCircuits/threadx-mcpp).
 
 It covers all of ThreadX apis (aparm from performance info) and most of FileX apis.
