@@ -2,6 +2,14 @@
 
 #include "txCommon.hpp"
 
+namespace ThreadX::Native
+{
+#include "fx_api.h"
+#ifdef FX_ENABLE_FAULT_TOLERANT
+#include "fx_fault_tolerant.h"
+#endif
+} // namespace ThreadX::Native
+
 namespace FileX
 {
 enum class Error : ThreadX::Uint

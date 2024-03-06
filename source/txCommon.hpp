@@ -6,11 +6,7 @@
 
 namespace ThreadX::Native
 {
-#include "fx_api.h"
 #include "tx_api.h"
-#ifdef FX_ENABLE_FAULT_TOLERANT
-#include "fx_fault_tolerant.h"
-#endif
 } // namespace ThreadX::Native
 
 namespace ThreadX
