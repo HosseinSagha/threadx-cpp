@@ -8,7 +8,7 @@ File::File(std::string_view fileName, MediaBase &media, const OpenOption option,
 {
     using namespace ThreadX::Native;
     [[maybe_unused]] Error error{fx_file_open(
-        std::addressof(media), this, const_cast<char *>(fileName.data()), static_cast<ThreadX::Uint>(option))};
+        std::addressof(media), this, const_cast<char *>(fileName.data()), std::to_underlying(option))};
     assert(error == Error::success);
 
     if (m_writeNotifyCallback)
@@ -62,7 +62,7 @@ Error File::seek(const ThreadX::Ulong64 offset)
 
 Error File::relativeSeek(const ThreadX::Ulong64 offset, const SeekFrom from)
 {
-    return Error{fx_file_extended_relative_seek(this, offset, static_cast<ThreadX::Uint>(from))};
+    return Error{fx_file_extended_relative_seek(this, offset, std::to_underlying(from))};
 }
 
 Error File::write(const std::span<std::byte> data)

@@ -1,4 +1,5 @@
 #include "tickTimer.hpp"
+#include <utility>
 
 namespace ThreadX
 {
@@ -11,7 +12,7 @@ TickTimer::TickTimer(const Duration &timeout, const ExpirationCallback &expirati
     [[maybe_unused]] Error error{tx_timer_create(
         this, const_cast<char *>("timer"), m_expirationCallback ? TickTimer::expirationCallback : nullptr,
         reinterpret_cast<Ulong>(this), ticks(timeout), type == TimerType::SingleShot ? 0 : ticks(timeout),
-        static_cast<Uint>(activationType))};
+        std::to_underlying(activationType))};
     assert(error == Error::success);
 }
 

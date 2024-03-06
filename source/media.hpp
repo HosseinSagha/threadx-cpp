@@ -5,6 +5,7 @@
 #include <functional>
 #include <span>
 #include <string_view>
+#include <utility>
 
 namespace FileX
 {
@@ -93,8 +94,8 @@ template <SectorSize N = SectorSize::halfAKilobyte> class Media : public MediaBa
     auto format(const ThreadX::Ulong storageSize, const ThreadX::Uint sectorPerCluster = 1,
                 const ThreadX::Uint directoryEntries = 32);
     auto writeSector(
-        const ThreadX::Ulong sectorNo, const std::span<std::byte, static_cast<ThreadX::Uint>(N)> sectorData);
-    auto readSector(const ThreadX::Ulong sectorNo, std::span<std::byte, static_cast<ThreadX::Uint>(N)> sectorData);
+        const ThreadX::Ulong sectorNo, const std::span<std::byte, std::to_underlying(N)> sectorData);
+    auto readSector(const ThreadX::Ulong sectorNo, std::span<std::byte, std::to_underlying(N)> sectorData);
 
   private:
     using MediaBase::m_fileSystemInitialised;
@@ -111,7 +112,7 @@ template <SectorSize N = SectorSize::halfAKilobyte> class Media : public MediaBa
     // the scratch memory size shall be at least 3072 bytes and must be multiple of sector size.
     static constexpr auto cacheSize = []() {
         return (N == SectorSize::twoKiloBytes or N == SectorSize::fourKilobytes)
-                   ? static_cast<ThreadX::Uint>(SectorSize::fourKilobytes) / ThreadX::sizeOfUlong
+                   ? std::to_underlying(SectorSize::fourKilobytes) / ThreadX::sizeOfUlong
                    : faultTolerantCacheSize / ThreadX::sizeOfUlong;
     };
     std::array<ThreadX::Ulong, cacheSize()> m_faultTolerantCache{};
@@ -119,7 +120,7 @@ template <SectorSize N = SectorSize::halfAKilobyte> class Media : public MediaBa
     void *m_driverInfoPtr;
     const NotifyCallback m_openNotifyCallback;
     const NotifyCallback m_closeNotifyCallback;
-    std::array<uint8_t, static_cast<size_t>(N)> m_mediaMemory{};
+    std::array<uint8_t, std::to_underlying(N)> m_mediaMemory{};
 };
 
 template <SectorSize N> constexpr SectorSize Media<N>::sectorSize()
@@ -179,53 +180,53 @@ template <SectorSize N>
 auto Media<N>::format(const ThreadX::Ulong storageSize, const ThreadX::Uint sectorPerCluster,
                       const ThreadX::Uint directoryEntriesFat12_16)
 {
-    assert(storageSize % static_cast<ThreadX::Uint>(N) == 0);
+    assert(storageSize % std::to_underlying(N) == 0);
 
     return Error{
 #ifdef FX_ENABLE_EXFAT
         fx_media_exFAT_format(
             this,
-            Media::driverCallback,                           // Driver entry
-            m_driverInfoPtr,                                 // could be RAM disk memory pointer
-            m_mediaMemory.data(),                            // Media buffer pointer
-            m_mediaMemory.size(),                            // Media buffer size
-            const_cast<char *>("disk"),                      // Volume Name
-            1,                                               // Number of FATs
-            0,                                               // Hidden sectors
-            storageSize / static_cast<ThreadX::Uint>(N) - 1, // Total sectors
-            static_cast<ThreadX::Uint>(N),                   // Sector size
-            sectorPerCluster,                                // exFAT Sectors per cluster
-            12345,                                           // Volume ID
-            1)                                               // Boundary unit
+            Media::driverCallback,                   // Driver entry
+            m_driverInfoPtr,                         // could be RAM disk memory pointer
+            m_mediaMemory.data(),                    // Media buffer pointer
+            m_mediaMemory.size(),                    // Media buffer size
+            const_cast<char *>("disk"),              // Volume Name
+            1,                                       // Number of FATs
+            0,                                       // Hidden sectors
+            storageSize / std::to_underlying(N) - 1, // Total sectors
+            std::to_underlying(N),                   // Sector size
+            sectorPerCluster,                        // exFAT Sectors per cluster
+            12345,                                   // Volume ID
+            1)                                       // Boundary unit
 #else
         fx_media_format(
             this,
-            Media::driverCallback,                           // Driver entry
-            m_driverInfoPtr,                                 // could be RAM disk memory pointer
-            m_mediaMemory.data(),                            // Media buffer pointer
-            m_mediaMemory.size(),                            // Media buffer size
-            const_cast<char *>("disk"),                      // Volume Name
-            1,                                               // Number of FATs
-            directoryEntriesFat12_16,                        // Directory Entries
-            0,                                               // Hidden sectors
-            storageSize / static_cast<ThreadX::Uint>(N) - 1, // Total sectors. 1 free sector to improve performance.
-            static_cast<ThreadX::Uint>(N),                   // Sector size
-            sectorPerCluster,                                // Sectors per cluster
-            1,                                               // Heads
-            1)                                               // Sectors per track
+            Media::driverCallback,                   // Driver entry
+            m_driverInfoPtr,                         // could be RAM disk memory pointer
+            m_mediaMemory.data(),                    // Media buffer pointer
+            m_mediaMemory.size(),                    // Media buffer size
+            const_cast<char *>("disk"),              // Volume Name
+            1,                                       // Number of FATs
+            directoryEntriesFat12_16,                // Directory Entries
+            0,                                       // Hidden sectors
+            storageSize / std::to_underlying(N) - 1, // Total sectors. 1 free sector to improve performance.
+            std::to_underlying(N),                   // Sector size
+            sectorPerCluster,                        // Sectors per cluster
+            1,                                       // Heads
+            1)                                       // Sectors per track
 #endif
     };
 }
 
 template <SectorSize N>
 auto Media<N>::writeSector(
-    const ThreadX::Ulong sectorNo, const std::span<std::byte, static_cast<ThreadX::Uint>(N)> sectorData)
+    const ThreadX::Ulong sectorNo, const std::span<std::byte, std::to_underlying(N)> sectorData)
 {
     return Error{fx_media_write(this, sectorNo, sectorData.data())};
 }
 
 template <SectorSize N>
-auto Media<N>::readSector(const ThreadX::Ulong sectorNo, std::span<std::byte, static_cast<ThreadX::Uint>(N)> sectorData)
+auto Media<N>::readSector(const ThreadX::Ulong sectorNo, std::span<std::byte, std::to_underlying(N)> sectorData)
 {
     return Error{fx_media_read(this, sectorNo, sectorData.data())};
 }

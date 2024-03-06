@@ -8,7 +8,7 @@
 
 namespace ThreadX
 {
-enum class TraceEvent
+enum class TraceEvent : Ulong
 {
     txAllEvents = TX_TRACE_ALL_EVENTS,
     txInternalEvents = TX_TRACE_INTERNAL_EVENTS,
@@ -51,12 +51,12 @@ enum class TraceEvent
 
 inline Ulong operator|(const TraceEvent eventType1, const TraceEvent eventType2)
 {
-    return static_cast<Ulong>(eventType1) | static_cast<Ulong>(eventType2);
+    return std::to_underlying(eventType1) | std::to_underlying(eventType2);
 }
 
 inline Ulong operator|(const Ulong eventType1, const TraceEvent eventType2)
 {
-    return eventType1 | static_cast<Ulong>(eventType2);
+    return eventType1 | std::to_underlying(eventType2);
 }
 
 class TraceBase

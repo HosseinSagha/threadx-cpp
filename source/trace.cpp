@@ -16,12 +16,12 @@ Error TraceBase::eventUnfilter(const Ulong eventBits)
 
 Error TraceBase::eventFilter(const TraceEvent event)
 {
-    return Error{Native::tx_trace_event_filter(static_cast<Ulong>(event))};
+    return Error{Native::tx_trace_event_filter(std::to_underlying(event))};
 }
 
 Error TraceBase::eventUnfilter(const TraceEvent event)
 {
-    return Error{Native::tx_trace_event_unfilter(static_cast<Ulong>(event))};
+    return Error{Native::tx_trace_event_unfilter(std::to_underlying(event))};
 }
 
 Error TraceBase::disable()

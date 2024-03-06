@@ -1,4 +1,5 @@
 #include "eventFlags.hpp"
+#include <utility>
 
 namespace ThreadX
 {
@@ -23,12 +24,12 @@ EventFlags::~EventFlags()
 
 Error EventFlags::set(const BitMask &bitMask)
 {
-    return Error{tx_event_flags_set(this, bitMask.to_ulong(), static_cast<Uint>(Option::orInto))};
+    return Error{tx_event_flags_set(this, bitMask.to_ulong(), std::to_underlying(Option::orInto))};
 }
 
 Error EventFlags::clear(const BitMask &bitMask)
 {
-    return Error{tx_event_flags_set(this, (~bitMask).to_ulong(), static_cast<Uint>(Option::andInto))};
+    return Error{tx_event_flags_set(this, (~bitMask).to_ulong(), std::to_underlying(Option::andInto))};
 }
 
 EventFlags::ReturnTuple EventFlags::get(const BitMask &bitMask, const EventOption eventOption)
@@ -86,7 +87,7 @@ EventFlags::ReturnTuple EventFlags::waitFor(
     const BitMask &bitMask, const TickTimer::Duration &waitDuration, const Option option)
 {
     Ulong actualFlags{};
-    Error error{tx_event_flags_get(this, bitMask.to_ulong(), static_cast<Uint>(option), std::addressof(actualFlags),
+    Error error{tx_event_flags_get(this, bitMask.to_ulong(), std::to_underlying(option), std::addressof(actualFlags),
                                    TickTimer::ticks(waitDuration))};
 
     return {error, BitMask{actualFlags}};

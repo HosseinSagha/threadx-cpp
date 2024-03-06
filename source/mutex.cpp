@@ -1,11 +1,12 @@
 #include "mutex.hpp"
+#include <utility>
 
 namespace ThreadX
 {
 Mutex::Mutex(const InheritMode inheritMode) : Native::TX_MUTEX{}
 {
     using namespace Native;
-    [[maybe_unused]] Error error{tx_mutex_create(this, const_cast<char *>("mutex"), static_cast<Uint>(inheritMode))};
+    [[maybe_unused]] Error error{tx_mutex_create(this, const_cast<char *>("mutex"), std::to_underlying(inheritMode))};
     assert(error == Error::success);
 }
 

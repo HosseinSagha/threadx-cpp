@@ -1,5 +1,6 @@
 #include "thread.hpp"
 #include "kernel.hpp"
+#include <utility>
 
 namespace ThreadX::ThisThread
 {
@@ -38,7 +39,7 @@ Thread::Thread(BytePoolBase &pool, const Ulong stackSize, const NotifyCallback &
     using namespace Native;
     error = Error{tx_thread_create(
         this, const_cast<char *>("thread"), entryFunction, reinterpret_cast<Ulong>(this), m_stackPtr, stackSize,
-        priority, preamptionThresh, timeSlice, static_cast<Uint>(startType))};
+        priority, preamptionThresh, timeSlice, std::to_underlying(startType))};
     assert(error == Error::success);
 
     error = Error{tx_thread_entry_exit_notify(this, Thread::entryExitNotifyCallback)};
@@ -57,7 +58,7 @@ Thread::Thread(BlockPoolBase &pool, const NotifyCallback &entryExitNotifyCallbac
     using namespace Native;
     error = Error{tx_thread_create(
         this, const_cast<char *>("thread"), entryFunction, reinterpret_cast<Ulong>(this), m_stackPtr, pool.blockSize(),
-        priority, preamptionThresh, timeSlice, static_cast<Uint>(startType))};
+        priority, preamptionThresh, timeSlice, std::to_underlying(startType))};
     assert(error == Error::success);
 
     error = Error{tx_thread_entry_exit_notify(this, Thread::entryExitNotifyCallback)};
