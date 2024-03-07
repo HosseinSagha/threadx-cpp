@@ -24,11 +24,16 @@ class TickTimer : Native::TX_TIMER
 {
   public:
     using ExpirationCallback = std::function<void(Ulong)>;
-    using Duration = std::chrono::duration<float, std::ratio<1, TX_TIMER_TICKS_PER_SECOND>>;
-    using TimePoint = std::chrono::time_point<TickTimer, Duration>;
+    using rep = double;
+    using period = std::ratio<1, TX_TIMER_TICKS_PER_SECOND>;
+    using duration = std::chrono::duration<rep, period>;
+    using Duration = duration;
+    using time_point = std::chrono::time_point<TickTimer, Duration>;
+    using TimePoint = time_point;
+    static constexpr bool is_steady = true;
 
-    static inline constexpr Duration noWait{0};
-    static inline constexpr Duration waitForever{0xFFFFFFFFUL};
+    static constexpr Duration noWait{};
+    static constexpr Duration waitForever{0xFFFFFFFFUL};
 
     /// Constructor
     // ID zero means no callback and therefore passed callbackID never matches timer objects with no callback
@@ -44,7 +49,8 @@ class TickTimer : Native::TX_TIMER
     /// Destructor. deletes the timer.
     ~TickTimer();
 
-    static constexpr Ulong ticks(const Duration &duration);
+    static constexpr auto ticks(const Duration &duration);
+    static constexpr auto ticks(const TimePoint &time);
 
     /// sets the internal system clock to the specified value.
     /// \param time
@@ -83,8 +89,15 @@ class TickTimer : Native::TX_TIMER
     TimerType m_type;
 };
 
-constexpr Ulong TickTimer::ticks(const TickTimer::Duration &duration)
+static_assert(std::chrono::is_clock_v<TickTimer>);
+
+constexpr auto TickTimer::ticks(const Duration &duration)
 {
     return Ulong(duration.count());
+}
+
+constexpr auto TickTimer::ticks(const TimePoint &time)
+{
+    return ticks(time.time_since_epoch());
 }
 } // namespace ThreadX

@@ -22,7 +22,7 @@ template <class T> class Semaphore : protected Native::TX_SEMAPHORE
     // must be used for calls from initialization, timers, and ISRs
     auto tryAcquire();
 
-    auto tryAcquireUntil(const TickTimer::TimePoint &timePoint);
+    auto tryAcquireUntil(const TickTimer::TimePoint &time);
 
     /// retrieves an instance (a single count) from the specified counting semaphore.
     /// As a result, the specified semaphore's count is decreased by one.
@@ -89,9 +89,9 @@ template <typename T> auto Semaphore<T>::tryAcquire()
     return tryAcquireFor(TickTimer::noWait);
 }
 
-template <typename T> auto Semaphore<T>::tryAcquireUntil(const TickTimer::TimePoint &timePoint)
+template <typename T> auto Semaphore<T>::tryAcquireUntil(const TickTimer::TimePoint &time)
 {
-    return tryAcquireFor(timePoint - TickTimer::now());
+    return tryAcquireFor(time - TickTimer::now());
 }
 
 template <typename T> auto Semaphore<T>::tryAcquireFor(const TickTimer::Duration &waitDuration)

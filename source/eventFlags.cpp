@@ -43,9 +43,9 @@ EventFlags::ReturnTuple EventFlags::waitAll(const BitMask &bitMask, const EventO
 }
 
 EventFlags::ReturnTuple EventFlags::waitAllUntil(
-    const BitMask &bitMask, const TickTimer::TimePoint &timePoint, const EventOption eventOption)
+    const BitMask &bitMask, const TickTimer::TimePoint &time, const EventOption eventOption)
 {
-    return waitAllFor(bitMask, timePoint - TickTimer::now(), eventOption);
+    return waitAllFor(bitMask, time - TickTimer::now(), eventOption);
 }
 
 EventFlags::ReturnTuple EventFlags::waitAllFor(
@@ -66,9 +66,9 @@ EventFlags::ReturnTuple EventFlags::waitAny(const BitMask &bitMask, const EventO
 }
 
 EventFlags::ReturnTuple EventFlags::waitAnyUntil(
-    const BitMask &bitMask, const TickTimer::TimePoint &timePoint, const EventOption eventOption)
+    const BitMask &bitMask, const TickTimer::TimePoint &time, const EventOption eventOption)
 {
-    return waitAnyFor(bitMask, timePoint - TickTimer::now(), eventOption);
+    return waitAnyFor(bitMask, time - TickTimer::now(), eventOption);
 }
 
 EventFlags::ReturnTuple EventFlags::waitAnyFor(

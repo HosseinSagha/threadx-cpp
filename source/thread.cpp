@@ -6,7 +6,7 @@ namespace ThreadX::ThisThread
 {
 uintptr_t id()
 {
-    return uintptr_t(Native::tx_thread_identify());
+    return reinterpret_cast<uintptr_t>(Native::tx_thread_identify());
 }
 
 void yield()
@@ -19,9 +19,9 @@ Error sleepFor(const TickTimer::Duration &duration)
     return Error{Native::tx_thread_sleep(TickTimer::ticks(duration))};
 }
 
-Error sleepUntil(const TickTimer::TimePoint &timePoint)
+Error sleepUntil(const TickTimer::TimePoint &time)
 {
-    return sleepFor(timePoint - TickTimer::now());
+    return sleepFor(time - TickTimer::now());
 }
 } // namespace ThreadX::ThisThread
 

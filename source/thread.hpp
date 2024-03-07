@@ -51,9 +51,9 @@ class Thread : Native::TX_THREAD
     using ErrorCallback = std::function<void(Thread &)>;
     using ReturnTuple = std::tuple<Error, Uint>;
 
-    static inline constexpr Uint defaultPriority{16}; ///
-    static inline constexpr auto noTimeSlice{0};      ///
-    static inline constexpr Ulong minimumStackSize{TX_MINIMUM_STACK};
+    static constexpr Uint defaultPriority{16}; ///
+    static constexpr Ulong noTimeSlice{};      ///
+    static constexpr Ulong minimumStackSize{TX_MINIMUM_STACK};
 
     /// Constructor
     /// \param pool
@@ -139,8 +139,9 @@ class Thread : Native::TX_THREAD
     Mutex m_joinMutex{};
     BinarySemaphore m_exitSignal{};
 };
+} // namespace ThreadX
 
-namespace ThisThread
+namespace ThreadX::ThisThread
 {
 uintptr_t id();
 
@@ -151,6 +152,5 @@ void yield();
 /// \param duration
 Error sleepFor(const TickTimer::Duration &duration);
 
-Error sleepUntil(const TickTimer::TimePoint &timePoint);
-}; // namespace ThisThread
-} // namespace ThreadX
+Error sleepUntil(const TickTimer::TimePoint &time);
+}; // namespace ThreadX::ThisThread

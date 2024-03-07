@@ -45,16 +45,16 @@ class EventFlags : Native::TX_EVENT_FLAGS_GROUP
     ReturnTuple waitAllFor(const BitMask &bitMask, const TickTimer::Duration &waitDuration,
                            const EventOption eventOption = EventOption::clear);
 
-    ReturnTuple waitAllUntil(const BitMask &bitMask, const TickTimer::TimePoint &timePoint,
-                             const EventOption eventOption = EventOption::clear);
+    ReturnTuple waitAllUntil(
+        const BitMask &bitMask, const TickTimer::TimePoint &time, const EventOption eventOption = EventOption::clear);
 
     ReturnTuple waitAny(const BitMask &bitMask, const EventOption eventOption = EventOption::clear);
 
     ReturnTuple waitAnyFor(const BitMask &bitMask, const TickTimer::Duration &waitDuration,
                            const EventOption eventOption = EventOption::clear);
 
-    ReturnTuple waitAnyUntil(const BitMask &bitMask, const TickTimer::TimePoint &timePoint,
-                             const EventOption eventOption = EventOption::clear);
+    ReturnTuple waitAnyUntil(
+        const BitMask &bitMask, const TickTimer::TimePoint &time, const EventOption eventOption = EventOption::clear);
 
   private:
     enum class Option : Uint

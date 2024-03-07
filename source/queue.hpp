@@ -52,7 +52,7 @@ template <typename Msg> class Queue : public QueueBase
     // must be used for calls from initialization, timers, and ISRs
     auto tryReceive();
 
-    auto tryReceiveUntil(const TickTimer::TimePoint &timePoint);
+    auto tryReceiveUntil(const TickTimer::TimePoint &time);
 
     /// receive a message from queue
     /// \param waitDuration
@@ -64,7 +64,7 @@ template <typename Msg> class Queue : public QueueBase
     // must be used for calls from initialization, timers, and ISRs
     auto trySend(const Msg &message);
 
-    auto trySendUntil(const TickTimer::TimePoint &timePoint, const Msg &message);
+    auto trySendUntil(const TickTimer::TimePoint &time, const Msg &message);
     ///
     /// \param waitDuration
     /// \param message
@@ -76,7 +76,7 @@ template <typename Msg> class Queue : public QueueBase
     // must be used for calls from initialization, timers, and ISRs
     auto tryFrontSend(const Msg &message);
 
-    auto tryFrontSendUntil(const TickTimer::TimePoint &timePoint, const Msg &message);
+    auto tryFrontSendUntil(const TickTimer::TimePoint &time, const Msg &message);
     ///
     /// \param waitDuration
     /// \param message
@@ -152,9 +152,9 @@ template <typename Msg> auto Queue<Msg>::tryReceive()
     return tryReceiveFor(TickTimer::noWait);
 }
 
-template <typename Msg> auto Queue<Msg>::tryReceiveUntil(const TickTimer::TimePoint &timePoint)
+template <typename Msg> auto Queue<Msg>::tryReceiveUntil(const TickTimer::TimePoint &time)
 {
-    return tryReceiveFor(timePoint - TickTimer::now());
+    return tryReceiveFor(time - TickTimer::now());
 }
 
 template <typename Msg> Queue<Msg>::ReturnTuple Queue<Msg>::tryReceiveFor(const TickTimer::Duration &waitDuration)
@@ -175,9 +175,9 @@ template <typename Msg> auto Queue<Msg>::trySend(const Msg &message)
     return trySendFor(TickTimer::noWait, message);
 }
 
-template <typename Msg> auto Queue<Msg>::trySendUntil(const TickTimer::TimePoint &timePoint, const Msg &message)
+template <typename Msg> auto Queue<Msg>::trySendUntil(const TickTimer::TimePoint &time, const Msg &message)
 {
-    return trySendFor(timePoint - TickTimer::now(), message);
+    return trySendFor(time - TickTimer::now(), message);
 }
 ///
 /// \param waitDuration
@@ -199,9 +199,9 @@ template <typename Msg> auto Queue<Msg>::tryFrontSend(const Msg &message)
     return tryFrontSendFor(TickTimer::noWait, message);
 }
 
-template <typename Msg> auto Queue<Msg>::tryFrontSendUntil(const TickTimer::TimePoint &timePoint, const Msg &message)
+template <typename Msg> auto Queue<Msg>::tryFrontSendUntil(const TickTimer::TimePoint &time, const Msg &message)
 {
-    return tryFrontSendFor(timePoint - TickTimer::now(), message);
+    return tryFrontSendFor(time - TickTimer::now(), message);
 }
 ///
 /// \param waitDuration

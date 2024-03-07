@@ -15,7 +15,7 @@ using Ulong = Native::ULONG;     //uint32_t
 using Ulong64 = Native::ULONG64; //uint64_t
 using Uint = Native::UINT;       //size_t
 
-inline constexpr auto sizeOfUlong{sizeof(Ulong)};
+constexpr auto sizeOfUlong{sizeof(Ulong)};
 static_assert(sizeOfUlong >= sizeof(uintptr_t));
 
 enum class Error : Uint

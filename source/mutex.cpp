@@ -26,9 +26,9 @@ Error Mutex::try_lock()
     return try_lock_for(TickTimer::noWait);
 }
 
-Error Mutex::try_lock_until(const TickTimer::TimePoint &timePoint)
+Error Mutex::try_lock_until(const TickTimer::TimePoint &time)
 {
-    return try_lock_for(timePoint - TickTimer::now());
+    return try_lock_for(time - TickTimer::now());
 }
 
 Error Mutex::try_lock_for(const TickTimer::Duration &duration)

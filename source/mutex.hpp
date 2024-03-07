@@ -48,7 +48,7 @@ class Mutex : Native::TX_MUTEX
     // must be used for calls from initialization, timers, and ISRs
     Error try_lock();
 
-    Error try_lock_until(const TickTimer::TimePoint &timePoint);
+    Error try_lock_until(const TickTimer::TimePoint &time);
 
     Error try_lock_for(const TickTimer::Duration &duration);
 
