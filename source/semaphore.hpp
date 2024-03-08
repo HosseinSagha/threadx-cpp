@@ -101,7 +101,7 @@ template <typename T> auto Semaphore<T>::tryAcquireFor(const TickTimer::Duration
 
 template <typename T> auto Semaphore<T>::release()
 {
-    return static_cast<T *>(this)->releaseImpl();
+    return static_cast<T &>(*this).releaseImpl();
 }
 
 template <typename T> auto Semaphore<T>::release(Ulong count)

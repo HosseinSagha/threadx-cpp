@@ -93,8 +93,7 @@ template <SectorSize N = SectorSize::halfAKilobyte> class Media : public MediaBa
     auto open(const FaultTolerant mode = FaultTolerant::enable);
     auto format(const ThreadX::Ulong storageSize, const ThreadX::Uint sectorPerCluster = 1,
                 const ThreadX::Uint directoryEntries = 32);
-    auto writeSector(
-        const ThreadX::Ulong sectorNo, const std::span<std::byte, std::to_underlying(N)> sectorData);
+    auto writeSector(const ThreadX::Ulong sectorNo, const std::span<std::byte, std::to_underlying(N)> sectorData);
     auto readSector(const ThreadX::Ulong sectorNo, std::span<std::byte, std::to_underlying(N)> sectorData);
 
   private:
@@ -186,41 +185,40 @@ auto Media<N>::format(const ThreadX::Ulong storageSize, const ThreadX::Uint sect
 #ifdef FX_ENABLE_EXFAT
         fx_media_exFAT_format(
             this,
-            Media::driverCallback,                   // Driver entry
-            m_driverInfoPtr,                         // could be RAM disk memory pointer
-            m_mediaMemory.data(),                    // Media buffer pointer
-            m_mediaMemory.size(),                    // Media buffer size
-            const_cast<char *>("disk"),              // Volume Name
-            1,                                       // Number of FATs
-            0,                                       // Hidden sectors
-            storageSize / std::to_underlying(N) - 1, // Total sectors
-            std::to_underlying(N),                   // Sector size
-            sectorPerCluster,                        // exFAT Sectors per cluster
-            12345,                                   // Volume ID
-            1)                                       // Boundary unit
+            Media::driverCallback,               // Driver entry
+            m_driverInfoPtr,                     // could be RAM disk memory pointer
+            m_mediaMemory.data(),                // Media buffer pointer
+            m_mediaMemory.size(),                // Media buffer size
+            const_cast<char *>("disk"),          // Volume Name
+            1,                                   // Number of FATs
+            0,                                   // Hidden sectors
+            storageSize / std::to_underlying(N), // Total sectors
+            std::to_underlying(N),               // Sector size
+            sectorPerCluster,                    // exFAT Sectors per cluster
+            12345,                               // Volume ID
+            1)                                   // Boundary unit
 #else
         fx_media_format(
             this,
-            Media::driverCallback,                   // Driver entry
-            m_driverInfoPtr,                         // could be RAM disk memory pointer
-            m_mediaMemory.data(),                    // Media buffer pointer
-            m_mediaMemory.size(),                    // Media buffer size
-            const_cast<char *>("disk"),              // Volume Name
-            1,                                       // Number of FATs
-            directoryEntriesFat12_16,                // Directory Entries
-            0,                                       // Hidden sectors
-            storageSize / std::to_underlying(N) - 1, // Total sectors. 1 free sector to improve performance.
-            std::to_underlying(N),                   // Sector size
-            sectorPerCluster,                        // Sectors per cluster
-            1,                                       // Heads
-            1)                                       // Sectors per track
+            Media::driverCallback,               // Driver entry
+            m_driverInfoPtr,                     // could be RAM disk memory pointer
+            m_mediaMemory.data(),                // Media buffer pointer
+            m_mediaMemory.size(),                // Media buffer size
+            const_cast<char *>("disk"),          // Volume Name
+            1,                                   // Number of FATs
+            directoryEntriesFat12_16,            // Directory Entries
+            0,                                   // Hidden sectors
+            storageSize / std::to_underlying(N), // Total sectors
+            std::to_underlying(N),               // Sector size
+            sectorPerCluster,                    // Sectors per cluster
+            1,                                   // Heads
+            1)                                   // Sectors per track
 #endif
     };
 }
 
 template <SectorSize N>
-auto Media<N>::writeSector(
-    const ThreadX::Ulong sectorNo, const std::span<std::byte, std::to_underlying(N)> sectorData)
+auto Media<N>::writeSector(const ThreadX::Ulong sectorNo, const std::span<std::byte, std::to_underlying(N)> sectorData)
 {
     return Error{fx_media_write(this, sectorNo, sectorData.data())};
 }
