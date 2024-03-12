@@ -1,6 +1,7 @@
 #pragma once
 
 #include "fxCommon.hpp"
+#include "tickTimer.hpp"
 #include <array>
 #include <functional>
 #include <span>
@@ -33,17 +34,10 @@ class MediaBase : protected ThreadX::Native::FX_MEDIA
 
     MediaBase(const MediaBase &) = delete;
     MediaBase &operator=(const MediaBase &) = delete;
-    /*
-static fileSystemTime()
-{
-UINT fx_system_date_get(UINT *year, UINT *month, UINT *day);
-UINT fx_system_date_set(UINT year, UINT month, UINT day);
-UINT fx_system_time_get(UINT *hour, UINT *minute, UINT *second);
-UINT fx_system_time_set(UINT hour, UINT minute, UINT second);
-}*/
+
+    static Error fileSystemTime(const ThreadX::TickTimer::TimePoint &time);
     Error volume(std::string_view volumeName);
     ReturnTupleStr volume();
-
     Error createDir(std::string_view dirName);
     Error deleteDir(std::string_view dirName);
     Error renameDir(std::string_view dirName, std::string_view newName);

@@ -47,7 +47,7 @@ enum class NotifyCondition : Uint
 class Thread : Native::TX_THREAD
 {
   public:
-    using NotifyCallback = std::function<void(Thread &, NotifyCondition)>;
+    using NotifyCallback = std::function<void(Thread &, const NotifyCondition)>;
     using ErrorCallback = std::function<void(Thread &)>;
     using ReturnTuple = std::tuple<Error, Uint>;
 
@@ -128,8 +128,8 @@ class Thread : Native::TX_THREAD
 
   private:
     static void entryFunction(auto thisPtr);
-    static void entryExitNotifyCallback(auto threadPtr, auto condition);
-    static void stackErrorNotifyCallback(Native::TX_THREAD *threadPtr);
+    static void entryExitNotifyCallback(auto *const threadPtr, const auto condition);
+    static void stackErrorNotifyCallback(Native::TX_THREAD *const threadPtr);
     virtual void entryCallback() = 0; // pure virtual class
 
     static inline ErrorCallback m_stackErrorNotifyCallback;

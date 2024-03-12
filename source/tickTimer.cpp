@@ -31,6 +31,17 @@ TickTimer::TimePoint TickTimer::now()
     return TimePoint{Duration{Native::tx_time_get()}};
 }
 
+std::time_t TickTimer::to_time_t(const TimePoint &time)
+{
+    return duration_cast<std::chrono::seconds>(time.time_since_epoch()).count();
+}
+
+TickTimer::TimePoint TickTimer::from_time_t(const std::time_t &time)
+{
+    using namespace std::chrono;
+    return time_point_cast<Duration>(std::chrono::time_point<TickTimer, seconds>(seconds{time}));
+}
+
 Error TickTimer::activate()
 {
     return Error{tx_timer_activate(this)};
@@ -41,12 +52,12 @@ Error TickTimer::deactivate()
     return Error{tx_timer_deactivate(this)};
 }
 
-Error TickTimer::change(const Duration &timeout, ActivationType activationType)
+Error TickTimer::change(const Duration &timeout, const ActivationType activationType)
 {
     return change(timeout, m_type, activationType);
 }
 
-Error TickTimer::change(const Duration &timeout, const TimerType type, ActivationType activationType)
+Error TickTimer::change(const Duration &timeout, const TimerType type, const ActivationType activationType)
 {
     Error error{deactivate()};
     assert(error == Error::success);
@@ -74,7 +85,7 @@ size_t TickTimer::id() const
     return m_id;
 }
 
-void TickTimer::expirationCallback(Ulong timerPtr)
+void TickTimer::expirationCallback(const Ulong timerPtr)
 {
     auto &timer{*reinterpret_cast<TickTimer *>(timerPtr)};
     timer.m_expirationCallback(timer.m_id);

@@ -2,6 +2,27 @@
 
 namespace FileX
 {
+Error MediaBase::fileSystemTime(const ThreadX::TickTimer::TimePoint &time)
+{
+    auto t{ThreadX::TickTimer::to_time_t(time)};
+    auto localTime{std::localtime(std::addressof(t))};
+
+    if (Error error{
+            ThreadX::Native::fx_system_date_set(localTime->tm_year + 1900, localTime->tm_mon + 1, localTime->tm_mday)};
+        error != Error::success)
+    {
+        return error;
+    }
+
+    if (Error error{ThreadX::Native::fx_system_time_set(localTime->tm_hour, localTime->tm_min, localTime->tm_sec)};
+        error != Error::success)
+    {
+        return error;
+    }
+
+    return Error::success;
+}
+
 MediaBase::MediaBase() : ThreadX::Native::FX_MEDIA{}
 {
 }

@@ -182,13 +182,7 @@ void Thread::entryFunction(auto thisPtr)
     reinterpret_cast<Thread *>(thisPtr)->entryCallback();
 }
 
-void Thread::stackErrorNotifyCallback(Native::TX_THREAD *threadPtr)
-{
-    auto &thread{static_cast<Thread &>(*threadPtr)};
-    thread.m_stackErrorNotifyCallback(thread);
-}
-
-void Thread::entryExitNotifyCallback(auto threadPtr, auto condition)
+void Thread::entryExitNotifyCallback(auto *const threadPtr, const auto condition)
 {
     auto &thread{static_cast<Thread &>(*threadPtr)};
     auto notifyCondition{NotifyCondition{condition}};
@@ -202,5 +196,11 @@ void Thread::entryExitNotifyCallback(auto threadPtr, auto condition)
     {
         thread.m_exitSignal.release();
     }
+}
+
+void Thread::stackErrorNotifyCallback(Native::TX_THREAD *const threadPtr)
+{
+    auto &thread{static_cast<Thread &>(*threadPtr)};
+    thread.m_stackErrorNotifyCallback(thread);
 }
 } // namespace ThreadX

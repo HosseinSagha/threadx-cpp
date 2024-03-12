@@ -59,13 +59,17 @@ class TickTimer : Native::TX_TIMER
     /// returns the internal system clock.
     static TimePoint now();
 
+    static std::time_t to_time_t(const TimePoint &timer);
+
+    static TimePoint from_time_t(const std::time_t &timer);
+
     /// activates the specified application timer
     Error activate();
 
     /// Deactivate application timer
     Error deactivate();
 
-    Error change(const Duration &timeout, ActivationType activationType = ActivationType::autoActivate);
+    Error change(const Duration &timeout, const ActivationType activationType = ActivationType::autoActivate);
 
     /// change timeout or type. The timer must be deactivated prior to calling this service, and activated afterwards.
     /// An expired one-shot timer must be reset via change() before it can be activated again.
@@ -80,7 +84,7 @@ class TickTimer : Native::TX_TIMER
     size_t id() const;
 
   private:
-    static void expirationCallback(Ulong timerPtr);
+    static void expirationCallback(const Ulong timerPtr);
 
     static inline size_t m_idCounter;
     Duration m_timeout;

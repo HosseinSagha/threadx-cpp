@@ -64,6 +64,8 @@ template <Ulong Size> BytePool<Size>::BytePool()
 class BlockPoolBase : public MemoryPoolBase, protected Native::TX_BLOCK_POOL
 {
   public:
+    constexpr Ulong blockSize();
+
     BlockPoolBase(const BlockPoolBase &) = delete;
     BlockPoolBase &operator=(const BlockPoolBase &) = delete;
 
@@ -74,8 +76,6 @@ class BlockPoolBase : public MemoryPoolBase, protected Native::TX_BLOCK_POOL
     /// Places the highest priority thread suspended for memory on this pool at the front of the suspension list.
     /// All other threads remain in the same FIFO order they were suspended in.
     Error prioritise();
-
-    constexpr Ulong blockSize();
 
   protected:
     BlockPoolBase(Ulong blockSize);
