@@ -38,7 +38,7 @@ Error MediaBase::volume(std::string_view volumeName)
     return Error{fx_media_volume_set(this, const_cast<char *>(volumeName.data()))};
 }
 
-MediaBase::ReturnTupleStr MediaBase::volume()
+MediaBase::ReturnPairStr MediaBase::volume()
 {
     char volumeName[volumNameLength];
     Error error{fx_media_volume_get(this, volumeName, FX_BOOT_SECTOR)};
@@ -80,7 +80,7 @@ Error MediaBase::defaultDir(std::string_view newPath)
     return Error{fx_directory_default_set(this, const_cast<char *>(newPath.data()))};
 }
 
-MediaBase::ReturnTupleStr MediaBase::defaultDir()
+MediaBase::ReturnPairStr MediaBase::defaultDir()
 {
     char *path = nullptr;
     Error error{fx_directory_default_get(this, std::addressof(path))};
@@ -94,7 +94,7 @@ Error MediaBase::localDir(std::string_view newPath)
     return Error{fx_directory_local_path_set(this, std::addressof(localPath), const_cast<char *>(newPath.data()))};
 }
 
-MediaBase::ReturnTupleStr MediaBase::localDir()
+MediaBase::ReturnPairStr MediaBase::localDir()
 {
     char *path = nullptr;
     Error error{fx_directory_local_path_get(this, std::addressof(path))};
@@ -106,7 +106,7 @@ Error MediaBase::clearLocalDir()
     return Error{fx_directory_local_path_clear(this)};
 }
 
-MediaBase::ReturnTuple MediaBase::space()
+MediaBase::ReturnPair MediaBase::space()
 {
     ThreadX::Ulong64 spaceLeft{};
     Error error{fx_media_extended_space_available(this, std::addressof(spaceLeft))};

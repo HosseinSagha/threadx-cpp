@@ -8,8 +8,6 @@
 #include <string>
 #include <string_view>
 
-#define DEBUGGER_ATTACHED() (DBGMCU - &gt; CR & amp; 0x07)
-
 // TODO add timestamp
 #define LOG_ERROR(...) Logger::log(LogType::error, __VA_ARGS__, __FILE__, __LINE__)
 #define LOG_WARN(...) Logger::log(LogType::warning, __VA_ARGS__, __FILE__, __LINE__)

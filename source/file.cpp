@@ -7,8 +7,8 @@ File::File(std::string_view fileName, MediaBase &media, const OpenOption option,
     : ThreadX::Native::FX_FILE{}, m_writeNotifyCallback{writeNotifyCallback}
 {
     using namespace ThreadX::Native;
-    [[maybe_unused]] Error error{fx_file_open(
-        std::addressof(media), this, const_cast<char *>(fileName.data()), std::to_underlying(option))};
+    [[maybe_unused]] Error error{
+        fx_file_open(std::addressof(media), this, const_cast<char *>(fileName.data()), std::to_underlying(option))};
     assert(error == Error::success);
 
     if (m_writeNotifyCallback)
@@ -23,7 +23,7 @@ File::~File()
     fx_file_close(this);
 }
 
-File::ReturnTuple File::allocate(ThreadX::Ulong64 size, AllocateOption option)
+File::ReturnPair File::allocate(ThreadX::Ulong64 size, AllocateOption option)
 {
     Error error{};
     ThreadX::Ulong64 allocatedSize{};
@@ -75,7 +75,7 @@ Error File::write(const std::string_view str)
     return Error{fx_file_write(this, const_cast<char *>(str.data()), str.size())};
 }
 
-std::tuple<Error, ThreadX::Ulong> File::read(std::span<std::byte> buffer, const ThreadX::Ulong size)
+std::pair<Error, ThreadX::Ulong> File::read(std::span<std::byte> buffer, const ThreadX::Ulong size)
 {
     ThreadX::Ulong actualSize{};
     Error error{fx_file_read(this, buffer.data(), (size == 0) ? buffer.size() : size, std::addressof(actualSize))};

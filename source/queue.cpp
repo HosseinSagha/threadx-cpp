@@ -9,7 +9,7 @@ QueueBase::QueueBase(MemoryPoolBase &pool) : Native::TX_QUEUE{}, m_pool{pool}
 QueueBase::~QueueBase()
 {
     tx_queue_delete(this);
-    m_pool.release(m_queueStartPtr);
+    m_pool.release(tx_queue_start);
 }
 
 Error QueueBase::prioritise()
@@ -20,5 +20,10 @@ Error QueueBase::prioritise()
 Error QueueBase::flush()
 {
     return Error{tx_queue_flush(this)};
+}
+
+std::string_view QueueBase::name()
+{
+    return tx_queue_name;
 }
 } // namespace ThreadX

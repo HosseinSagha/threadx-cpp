@@ -3,7 +3,6 @@
 #include <bitset>
 #include <climits>
 #include <functional>
-#include <tuple>
 
 namespace ThreadX
 {
@@ -21,13 +20,13 @@ class EventFlags : Native::TX_EVENT_FLAGS_GROUP
     /// external callback type
     using NotifyCallback = std::function<void(EventFlags &)>;
     using BitMask = std::bitset<EventFlags::eventFlagBit>;
-    using ReturnTuple = std::tuple<Error, BitMask>;
+    using ReturnPair = std::pair<Error, BitMask>;
 
     static constexpr auto allBits{BitMask{std::numeric_limits<Ulong>::max()}};
 
     ///
     /// \param setNotifyCallback set notify callback. \sa NotifyCallback
-    EventFlags(const NotifyCallback &setNotifyCallback = {});
+    EventFlags(std::string_view name, const NotifyCallback &setNotifyCallback = {});
 
     ~EventFlags();
 
@@ -38,23 +37,25 @@ class EventFlags : Native::TX_EVENT_FLAGS_GROUP
     Error clear(const BitMask &bitMask = allBits);
 
     // must be used for calls from initialization, timers, and ISRs
-    ReturnTuple get(const BitMask &bitMask = allBits, const EventOption eventOption = EventOption::clear);
+    ReturnPair get(const BitMask &bitMask = allBits, const EventOption eventOption = EventOption::clear);
 
-    ReturnTuple waitAll(const BitMask &bitMask, const EventOption eventOption = EventOption::clear);
+    ReturnPair waitAll(const BitMask &bitMask, const EventOption eventOption = EventOption::clear);
 
-    ReturnTuple waitAllFor(const BitMask &bitMask, const TickTimer::Duration &waitDuration,
-                           const EventOption eventOption = EventOption::clear);
+    ReturnPair waitAllFor(const BitMask &bitMask, const TickTimer::Duration &waitDuration,
+                          const EventOption eventOption = EventOption::clear);
 
-    ReturnTuple waitAllUntil(
+    ReturnPair waitAllUntil(
         const BitMask &bitMask, const TickTimer::TimePoint &time, const EventOption eventOption = EventOption::clear);
 
-    ReturnTuple waitAny(const BitMask &bitMask, const EventOption eventOption = EventOption::clear);
+    ReturnPair waitAny(const BitMask &bitMask, const EventOption eventOption = EventOption::clear);
 
-    ReturnTuple waitAnyFor(const BitMask &bitMask, const TickTimer::Duration &waitDuration,
-                           const EventOption eventOption = EventOption::clear);
+    ReturnPair waitAnyFor(const BitMask &bitMask, const TickTimer::Duration &waitDuration,
+                          const EventOption eventOption = EventOption::clear);
 
-    ReturnTuple waitAnyUntil(
+    ReturnPair waitAnyUntil(
         const BitMask &bitMask, const TickTimer::TimePoint &time, const EventOption eventOption = EventOption::clear);
+
+    std::string_view name();
 
   private:
     enum class Option : Uint
@@ -71,7 +72,7 @@ class EventFlags : Native::TX_EVENT_FLAGS_GROUP
     /// \param waitDuration Wait duration
     /// \param option \sa Option
     /// \return actual flags set
-    ReturnTuple waitFor(const BitMask &bitMask, const TickTimer::Duration &waitDuration, const Option option);
+    ReturnPair waitFor(const BitMask &bitMask, const TickTimer::Duration &waitDuration, const Option option);
 
     static void setNotifyCallback(auto notifyGroupPtr);
 

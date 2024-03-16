@@ -27,8 +27,8 @@ enum class SectorSize : ThreadX::Uint
 class MediaBase : protected ThreadX::Native::FX_MEDIA
 {
   public:
-    using ReturnTuple = std::tuple<Error, ThreadX::Ulong64>;
-    using ReturnTupleStr = std::tuple<Error, std::string_view>;
+    using ReturnPair = std::pair<Error, ThreadX::Ulong64>;
+    using ReturnPairStr = std::pair<Error, std::string_view>;
 
     friend class File;
 
@@ -37,7 +37,7 @@ class MediaBase : protected ThreadX::Native::FX_MEDIA
 
     static Error fileSystemTime(const ThreadX::TickTimer::TimePoint &time);
     Error volume(std::string_view volumeName);
-    ReturnTupleStr volume();
+    ReturnPairStr volume();
     Error createDir(std::string_view dirName);
     Error deleteDir(std::string_view dirName);
     Error renameDir(std::string_view dirName, std::string_view newName);
@@ -45,12 +45,12 @@ class MediaBase : protected ThreadX::Native::FX_MEDIA
     Error deleteFile(std::string_view fileName);
     Error renameFile(std::string_view fileName, std::string_view newFileName);
     Error defaultDir(std::string_view newPath);
-    ReturnTupleStr defaultDir();
+    ReturnPairStr defaultDir();
     Error localDir(std::string_view newPath);
-    ReturnTupleStr localDir();
+    ReturnPairStr localDir();
     Error clearLocalDir();
 
-    ReturnTuple space();
+    ReturnPair space();
 
     ///  This service is typically called when I/O errors are detected
     Error abort();

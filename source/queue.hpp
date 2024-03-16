@@ -18,11 +18,11 @@ class QueueBase : protected Native::TX_QUEUE
     /// delete all messages
     Error flush();
 
+    std::string_view name();
+
   protected:
     QueueBase(MemoryPoolBase &pool);
     ~QueueBase();
-
-    void *m_queueStartPtr{};
 
   private:
     MemoryPoolBase &m_pool;
@@ -35,17 +35,18 @@ template <typename Msg> class Queue : public QueueBase
   public:
     /// external Notifycallback type
     using NotifyCallback = std::function<void(Queue &)>;
-    using ReturnTuple = std::tuple<Error, Msg>;
+    using ReturnPair = std::pair<Error, Msg>;
 
-    static constexpr Ulong messageSize();
+    static constexpr size_t messageSize();
 
     ///
     /// \param pool byte pool to allocate queue in.
     /// \param queueSizeInNumOfMessages max num of messages in queue.
     /// \param sendNotifyCallback function to call when a message sent to queue.
     /// The Notifycallback is not allowed to call any ThreadX API with a suspension option.
-    Queue(BytePoolBase &pool, const Ulong queueSizeInNumOfMessages, const NotifyCallback &sendNotifyCallback = {});
-    Queue(BlockPoolBase &pool, const NotifyCallback sendNotifyCallback = {});
+    Queue(std::string_view name, BytePoolBase &pool, const Ulong queueSizeInNumOfMessages,
+          const NotifyCallback &sendNotifyCallback = {});
+    Queue(std::string_view name, BlockPoolBase &pool, const NotifyCallback sendNotifyCallback = {});
 
     auto receive();
 
@@ -57,7 +58,7 @@ template <typename Msg> class Queue : public QueueBase
     /// receive a message from queue
     /// \param waitDuration
     /// \return
-    ReturnTuple tryReceiveFor(const TickTimer::Duration &waitDuration);
+    ReturnPair tryReceiveFor(const TickTimer::Duration &waitDuration);
 
     auto send(const Msg &message);
 
@@ -84,21 +85,20 @@ template <typename Msg> class Queue : public QueueBase
     auto tryFrontSendFor(const TickTimer::Duration &waitDuration, const Msg &message);
 
   private:
-    using QueueBase::m_queueStartPtr;
-
-    auto create(const Ulong queueSizeInBytes);
+    auto create(std::string_view name, const Ulong queueSizeInBytes, void *const queueStartPtr);
     static auto sendNotifyCallback(auto queuePtr);
 
     const NotifyCallback m_sendNotifyCallback;
 };
 
-template <typename Msg> constexpr Ulong Queue<Msg>::messageSize()
+template <typename Msg> constexpr size_t Queue<Msg>::messageSize()
 {
     return sizeof(Msg);
 }
 
 template <typename Msg>
-Queue<Msg>::Queue(BytePoolBase &pool, const Ulong queueSizeInNumOfMessages, const NotifyCallback &sendNotifyCallback)
+Queue<Msg>::Queue(std::string_view name, BytePoolBase &pool, const Ulong queueSizeInNumOfMessages,
+                  const NotifyCallback &sendNotifyCallback)
     : QueueBase{pool}, m_sendNotifyCallback{sendNotifyCallback}
 {
     Ulong queueSizeInBytes{queueSizeInNumOfMessages * sizeof(Msg)};
@@ -106,30 +106,29 @@ Queue<Msg>::Queue(BytePoolBase &pool, const Ulong queueSizeInNumOfMessages, cons
     auto [error, queueStartPtr] = pool.allocate(queueSizeInBytes);
     assert(error == Error::success);
 
-    m_queueStartPtr = queueStartPtr;
-    error = create(queueSizeInBytes);
+    error = create(name, queueSizeInBytes, queueStartPtr);
     assert(error == Error::success);
 }
 
 template <typename Msg>
-Queue<Msg>::Queue(BlockPoolBase &pool, const NotifyCallback sendNotifyCallback)
+Queue<Msg>::Queue(std::string_view name, BlockPoolBase &pool, const NotifyCallback sendNotifyCallback)
     : QueueBase{pool}, m_sendNotifyCallback{sendNotifyCallback}
 {
     auto [error, queueStartPtr] = pool.allocate();
     assert(error == Error::success);
 
-    m_queueStartPtr = queueStartPtr;
-    error = create(pool.blockSize());
+    error = create(name, pool.blockSize(), queueStartPtr);
     assert(error == Error::success);
 }
 
-template <typename Msg> auto Queue<Msg>::create(const Ulong queueSizeInBytes)
+template <typename Msg>
+auto Queue<Msg>::create(std::string_view name, const Ulong queueSizeInBytes, void *const queueStartPtr)
 {
-    static_assert(sizeof(Msg) % sizeof(sizeOfUlong) == 0, "Queue message size is not a multiple of word (32-bit).");
+    static_assert(sizeof(Msg) % sizeof(sizeOfUlong) == 0, "Queue message size must be a multiple of word (32-bit).");
 
     using namespace Native;
     Error error{tx_queue_create(
-        this, const_cast<char *>("queue"), sizeof(Msg) / sizeof(sizeOfUlong), m_queueStartPtr, queueSizeInBytes)};
+        this, const_cast<char *>(name.data()), sizeof(Msg) / sizeof(sizeOfUlong), queueStartPtr, queueSizeInBytes)};
     assert(error == Error::success);
 
     if (m_sendNotifyCallback)
@@ -157,7 +156,7 @@ template <typename Msg> auto Queue<Msg>::tryReceiveUntil(const TickTimer::TimePo
     return tryReceiveFor(time - TickTimer::now());
 }
 
-template <typename Msg> Queue<Msg>::ReturnTuple Queue<Msg>::tryReceiveFor(const TickTimer::Duration &waitDuration)
+template <typename Msg> Queue<Msg>::ReturnPair Queue<Msg>::tryReceiveFor(const TickTimer::Duration &waitDuration)
 {
     Msg message;
     Error error{tx_queue_receive(this, std::addressof(message), TickTimer::ticks(waitDuration))};

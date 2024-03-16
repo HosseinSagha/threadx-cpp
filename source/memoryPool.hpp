@@ -21,11 +21,11 @@ class BytePoolBase : public MemoryPoolBase, protected Native::TX_BYTE_POOL
     BytePoolBase(const BytePoolBase &) = delete;
     BytePoolBase &operator=(const BytePoolBase &) = delete;
 
-    template <typename... Args> static constexpr auto minimumPoolSize(Args... memorySizes);
+    static constexpr auto minimumPoolSize(std::span<const Ulong> memorySizes);
 
     Error release(void *memoryPtr) final;
 
-    std::tuple<Error, void *> allocate(
+    std::pair<Error, void *> allocate(
         const Ulong memorySizeInBytes, const TickTimer::Duration &waitDuration = TickTimer::noWait);
 
     /// Places the highest priority thread suspended for memory on this pool at the front of the suspension list.
@@ -38,9 +38,15 @@ class BytePoolBase : public MemoryPoolBase, protected Native::TX_BYTE_POOL
     ~BytePoolBase();
 };
 
-template <typename... Args> constexpr auto BytePoolBase::minimumPoolSize(Args... memorySizes)
+constexpr auto BytePoolBase::minimumPoolSize(std::span<const Ulong> memorySizes)
 {
-    return Ulong{((memorySizes + 2 * sizeof(uintptr_t)) + ...) + 2 * sizeof(uintptr_t)};
+    Ulong poolSize{2 * sizeof(uintptr_t)};
+    for (auto memSize : memorySizes)
+    {
+        poolSize += (memSize + 2 * sizeof(uintptr_t));
+    }
+
+    return poolSize;
 }
 
 /// byte memory pool from which to allocate the thread stacks and queues.
@@ -71,24 +77,21 @@ class BlockPoolBase : public MemoryPoolBase, protected Native::TX_BLOCK_POOL
 
     Error release(void *memoryPtr) final;
 
-    std::tuple<Error, void *> allocate(const TickTimer::Duration &waitDuration = TickTimer::noWait);
+    std::pair<Error, void *> allocate(const TickTimer::Duration &waitDuration = TickTimer::noWait);
 
     /// Places the highest priority thread suspended for memory on this pool at the front of the suspension list.
     /// All other threads remain in the same FIFO order they were suspended in.
     Error prioritise();
 
   protected:
-    BlockPoolBase(Ulong blockSize);
+    BlockPoolBase();
     ///
     ~BlockPoolBase();
-
-  private:
-    const Ulong m_blockSize;
 };
 
 constexpr Ulong BlockPoolBase::blockSize()
 {
-    return m_blockSize;
+    return tx_block_pool_block_size;
 }
 
 template <Ulong Size, Ulong BlockSize>
@@ -103,7 +106,7 @@ class BlockPool : public BlockPoolBase, std::array<Ulong, Size / sizeOfUlong> //
     BlockPool();
 };
 
-template <Ulong Size, Ulong BlockSize> BlockPool<Size, BlockSize>::BlockPool() : BlockPoolBase{BlockSize}
+template <Ulong Size, Ulong BlockSize> BlockPool<Size, BlockSize>::BlockPool()
 {
     using namespace Native;
     [[maybe_unused]] Error error{

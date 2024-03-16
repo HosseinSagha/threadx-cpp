@@ -24,8 +24,8 @@ class CriticalSection
     static void unlock();
 
   private:
-    static bool locked;
-    static Native::TX_INTERRUPT_SAVE_AREA
+    static inline bool locked;
+    static inline Native::TX_INTERRUPT_SAVE_AREA
 };
 
 void start();

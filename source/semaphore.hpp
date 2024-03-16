@@ -43,13 +43,15 @@ template <class T> class Semaphore : protected Native::TX_SEMAPHORE
     /// list. All other threads remain in the same FIFO order they were suspended in.
     auto prioritise();
 
+    auto name();
+
     auto count() const;
 
   protected:
     /// Constructor
     /// \param initialCount
     /// \param releaseNotifyCallback The Notifycallback is not allowed to call any ThreadX API with a suspension option.
-    Semaphore(const Ulong initialCount = 0, const NotifyCallback &releaseNotifyCallback = {});
+    Semaphore(std::string_view name, const Ulong initialCount = 0, const NotifyCallback &releaseNotifyCallback = {});
 
     ~Semaphore();
 
@@ -60,11 +62,11 @@ template <class T> class Semaphore : protected Native::TX_SEMAPHORE
 };
 
 template <typename T>
-Semaphore<T>::Semaphore(const Ulong initialCount, const NotifyCallback &releaseNotifyCallback)
+Semaphore<T>::Semaphore(std::string_view name, const Ulong initialCount, const NotifyCallback &releaseNotifyCallback)
     : Native::TX_SEMAPHORE{}, m_releaseNotifyCallback{releaseNotifyCallback}
 {
     using namespace Native;
-    [[maybe_unused]] Error error{tx_semaphore_create(this, const_cast<char *>("semaphore"), initialCount)};
+    [[maybe_unused]] Error error{tx_semaphore_create(this, const_cast<char *>(name.data()), initialCount)};
     assert(error == Error::success);
 
     if (m_releaseNotifyCallback)
@@ -129,6 +131,11 @@ template <typename T> auto Semaphore<T>::prioritise()
     return Error{tx_semaphore_prioritize(this)};
 }
 
+template <typename T> auto Semaphore<T>::name()
+{
+    return std::string_view(tx_semaphore_name);
+}
+
 template <typename T> auto Semaphore<T>::count() const
 {
     return tx_semaphore_count;
@@ -145,8 +152,8 @@ template <Ulong CeilingValue> class BoundedSemaphore : public Semaphore<BoundedS
     friend class Semaphore<BoundedSemaphore>;
 
   public:
-    BoundedSemaphore(
-        const Ulong initialCount = 0, const Semaphore<BoundedSemaphore>::NotifyCallback &releaseNotifyCallback = {});
+    BoundedSemaphore(std::string_view name, const Ulong initialCount = 0,
+                     const Semaphore<BoundedSemaphore>::NotifyCallback &releaseNotifyCallback = {});
 
     constexpr auto ceiling();
 
@@ -156,8 +163,9 @@ template <Ulong CeilingValue> class BoundedSemaphore : public Semaphore<BoundedS
 
 template <Ulong CeilingValue>
 BoundedSemaphore<CeilingValue>::BoundedSemaphore(
-    const Ulong initialCount, const Semaphore<BoundedSemaphore>::NotifyCallback &releaseNotifyCallback)
-    : Semaphore<BoundedSemaphore>{initialCount, releaseNotifyCallback}
+    std::string_view name, const Ulong initialCount,
+    const Semaphore<BoundedSemaphore>::NotifyCallback &releaseNotifyCallback)
+    : Semaphore<BoundedSemaphore>{name, initialCount, releaseNotifyCallback}
 {
     assert(initialCount <= CeilingValue);
 }

@@ -6,7 +6,6 @@
 #include "tickTimer.hpp"
 #include "txCommon.hpp"
 #include <functional>
-#include <tuple>
 
 namespace ThreadX
 {
@@ -49,7 +48,15 @@ class Thread : Native::TX_THREAD
   public:
     using NotifyCallback = std::function<void(Thread &, const NotifyCondition)>;
     using ErrorCallback = std::function<void(Thread &)>;
-    using ReturnTuple = std::tuple<Error, Uint>;
+    using ReturnPair = std::pair<Error, Uint>;
+    using ID = uintptr_t;
+    using StackInfo = struct
+    {
+        Ulong size;
+        Ulong used;
+        Ulong maxUsed;
+        Ulong maxUsedPercent;
+    };
 
     static constexpr Uint defaultPriority{16}; ///
     static constexpr Ulong noTimeSlice{};      ///
@@ -62,12 +69,12 @@ class Thread : Native::TX_THREAD
     /// \param preamptionThresh
     /// \param timeSlice
     /// \param startType
-    Thread(BytePoolBase &pool, const Ulong stackSize = minimumStackSize,
+    Thread(std::string_view name, BytePoolBase &pool, const Ulong stackSize = minimumStackSize,
            const NotifyCallback &entryExitNotifyCallback = {}, const Uint priority = defaultPriority,
            const Uint preamptionThresh = defaultPriority, const Ulong timeSlice = noTimeSlice,
            const StartType startType = StartType::autoStart);
 
-    Thread(BlockPoolBase &pool, const NotifyCallback &entryExitNotifyCallback = {},
+    Thread(std::string_view name, BlockPoolBase &pool, const NotifyCallback &entryExitNotifyCallback = {},
            const Uint priority = defaultPriority, const Uint preamptionThresh = defaultPriority,
            const Ulong timeSlice = noTimeSlice, const StartType startType = StartType::autoStart);
 
@@ -101,27 +108,31 @@ class Thread : Native::TX_THREAD
 
     uintptr_t id();
 
+    std::string_view name();
+
     ThreadState state() const;
 
     /// Changes preemption-threshold of application thread.
     /// \param newPreempt
     /// \return
-    ReturnTuple changePreemption(const auto newPreempt);
+    ReturnPair changePreemption(const auto newPreempt);
 
     /// Change priority of application thread.
     /// \param newPriority
     /// \return
-    ReturnTuple changePriority(const auto newPriority);
+    ReturnPair changePriority(const auto newPriority);
 
     /// Changes time-slice of application thread.
     /// Using preemption-threshold disables time-slicing for the specified thread.
     /// \param newTimeSlice
     /// \return
-    ReturnTuple changeTimeSlice(const auto newTimeSlice);
+    ReturnPair changeTimeSlice(const auto newTimeSlice);
 
     void join();
 
     bool joinable();
+
+    StackInfo stackInfo();
 
   protected:
     virtual ~Thread();
@@ -135,9 +146,7 @@ class Thread : Native::TX_THREAD
     static inline ErrorCallback m_stackErrorNotifyCallback;
     MemoryPoolBase &m_pool;
     const NotifyCallback m_entryExitNotifyCallback;
-    void *m_stackPtr{};
-    Mutex m_joinMutex{};
-    BinarySemaphore m_exitSignal{};
+    BinarySemaphore *m_exitSignalPtr{};
 };
 } // namespace ThreadX
 

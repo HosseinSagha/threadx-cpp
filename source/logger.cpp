@@ -21,17 +21,17 @@ void Logger::addColourControl(const LogType logType)
     switch (logType)
     {
     case LogType::error:
-        m_message = RTT_CTRL_TEXT_BRIGHT_RED "ERROR: ";
+        m_message = RTT_CTRL_TEXT_BRIGHT_RED "ERR: ";
         break;
     case LogType::warning:
-        m_message = RTT_CTRL_TEXT_BRIGHT_YELLOW "WARNING: ";
+        m_message = RTT_CTRL_TEXT_BRIGHT_YELLOW "WRN: ";
         break;
     case LogType::info:
-        m_message = RTT_CTRL_TEXT_BRIGHT_WHITE;
+        m_message = RTT_CTRL_TEXT_BRIGHT_GREEN "INF: ";
         break;
     case LogType::debug:
     default:
-        m_message = RTT_CTRL_TEXT_BRIGHT_MAGENTA "DEBUG: ";
+        m_message = RTT_CTRL_TEXT_BRIGHT_MAGENTA "DBG: ";
         break;
     }
 }

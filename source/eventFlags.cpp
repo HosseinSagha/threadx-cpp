@@ -3,11 +3,11 @@
 
 namespace ThreadX
 {
-EventFlags::EventFlags(const NotifyCallback &setNotifyCallback)
+EventFlags::EventFlags(std::string_view name, const NotifyCallback &setNotifyCallback)
     : Native::TX_EVENT_FLAGS_GROUP{}, m_setNotifyCallback{setNotifyCallback}
 {
     using namespace Native;
-    [[maybe_unused]] Error error{tx_event_flags_create(this, const_cast<char *>("event flags"))};
+    [[maybe_unused]] Error error{tx_event_flags_create(this, const_cast<char *>(name.data()))};
     assert(error == Error::success);
 
     if (m_setNotifyCallback)
@@ -32,23 +32,23 @@ Error EventFlags::clear(const BitMask &bitMask)
     return Error{tx_event_flags_set(this, (~bitMask).to_ulong(), std::to_underlying(Option::andInto))};
 }
 
-EventFlags::ReturnTuple EventFlags::get(const BitMask &bitMask, const EventOption eventOption)
+EventFlags::ReturnPair EventFlags::get(const BitMask &bitMask, const EventOption eventOption)
 {
     return waitAllFor(bitMask, TickTimer::noWait, eventOption);
 }
 
-EventFlags::ReturnTuple EventFlags::waitAll(const BitMask &bitMask, const EventOption eventOption)
+EventFlags::ReturnPair EventFlags::waitAll(const BitMask &bitMask, const EventOption eventOption)
 {
     return waitAllFor(bitMask, TickTimer::waitForever, eventOption);
 }
 
-EventFlags::ReturnTuple EventFlags::waitAllUntil(
+EventFlags::ReturnPair EventFlags::waitAllUntil(
     const BitMask &bitMask, const TickTimer::TimePoint &time, const EventOption eventOption)
 {
     return waitAllFor(bitMask, time - TickTimer::now(), eventOption);
 }
 
-EventFlags::ReturnTuple EventFlags::waitAllFor(
+EventFlags::ReturnPair EventFlags::waitAllFor(
     const BitMask &bitMask, const TickTimer::Duration &waitDuration, const EventOption eventOption)
 {
     auto option{Option::allClear};
@@ -60,18 +60,18 @@ EventFlags::ReturnTuple EventFlags::waitAllFor(
     return waitFor(bitMask, waitDuration, option);
 }
 
-EventFlags::ReturnTuple EventFlags::waitAny(const BitMask &bitMask, const EventOption eventOption)
+EventFlags::ReturnPair EventFlags::waitAny(const BitMask &bitMask, const EventOption eventOption)
 {
     return waitAnyFor(bitMask, TickTimer::waitForever, eventOption);
 }
 
-EventFlags::ReturnTuple EventFlags::waitAnyUntil(
+EventFlags::ReturnPair EventFlags::waitAnyUntil(
     const BitMask &bitMask, const TickTimer::TimePoint &time, const EventOption eventOption)
 {
     return waitAnyFor(bitMask, time - TickTimer::now(), eventOption);
 }
 
-EventFlags::ReturnTuple EventFlags::waitAnyFor(
+EventFlags::ReturnPair EventFlags::waitAnyFor(
     const BitMask &bitMask, const TickTimer::Duration &waitDuration, const EventOption eventOption)
 {
     auto option{Option::anyClear};
@@ -83,7 +83,7 @@ EventFlags::ReturnTuple EventFlags::waitAnyFor(
     return waitFor(bitMask, waitDuration, option);
 }
 
-EventFlags::ReturnTuple EventFlags::waitFor(
+EventFlags::ReturnPair EventFlags::waitFor(
     const BitMask &bitMask, const TickTimer::Duration &waitDuration, const Option option)
 {
     Ulong actualFlags{};
@@ -91,6 +91,11 @@ EventFlags::ReturnTuple EventFlags::waitFor(
                                    TickTimer::ticks(waitDuration))};
 
     return {error, BitMask{actualFlags}};
+}
+
+std::string_view EventFlags::name()
+{
+    return tx_event_flags_group_name;
 }
 
 void EventFlags::setNotifyCallback(auto notifyGroupPtr)
