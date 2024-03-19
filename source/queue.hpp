@@ -44,9 +44,9 @@ template <typename Msg> class Queue : public QueueBase
     /// \param queueSizeInNumOfMessages max num of messages in queue.
     /// \param sendNotifyCallback function to call when a message sent to queue.
     /// The Notifycallback is not allowed to call any ThreadX API with a suspension option.
-    Queue(std::string_view name, BytePoolBase &pool, const Ulong queueSizeInNumOfMessages,
+    Queue(const std::string_view name, BytePoolBase &pool, const Ulong queueSizeInNumOfMessages,
           const NotifyCallback &sendNotifyCallback = {});
-    Queue(std::string_view name, BlockPoolBase &pool, const NotifyCallback sendNotifyCallback = {});
+    Queue(const std::string_view name, BlockPoolBase &pool, const NotifyCallback sendNotifyCallback = {});
 
     auto receive();
 
@@ -85,7 +85,7 @@ template <typename Msg> class Queue : public QueueBase
     auto tryFrontSendFor(const TickTimer::Duration &waitDuration, const Msg &message);
 
   private:
-    auto create(std::string_view name, const Ulong queueSizeInBytes, void *const queueStartPtr);
+    auto create(const std::string_view name, const Ulong queueSizeInBytes, void *const queueStartPtr);
     static auto sendNotifyCallback(auto queuePtr);
 
     const NotifyCallback m_sendNotifyCallback;
@@ -97,7 +97,7 @@ template <typename Msg> constexpr size_t Queue<Msg>::messageSize()
 }
 
 template <typename Msg>
-Queue<Msg>::Queue(std::string_view name, BytePoolBase &pool, const Ulong queueSizeInNumOfMessages,
+Queue<Msg>::Queue(const std::string_view name, BytePoolBase &pool, const Ulong queueSizeInNumOfMessages,
                   const NotifyCallback &sendNotifyCallback)
     : QueueBase{pool}, m_sendNotifyCallback{sendNotifyCallback}
 {
@@ -111,7 +111,7 @@ Queue<Msg>::Queue(std::string_view name, BytePoolBase &pool, const Ulong queueSi
 }
 
 template <typename Msg>
-Queue<Msg>::Queue(std::string_view name, BlockPoolBase &pool, const NotifyCallback sendNotifyCallback)
+Queue<Msg>::Queue(const std::string_view name, BlockPoolBase &pool, const NotifyCallback sendNotifyCallback)
     : QueueBase{pool}, m_sendNotifyCallback{sendNotifyCallback}
 {
     auto [error, queueStartPtr] = pool.allocate();
@@ -122,7 +122,7 @@ Queue<Msg>::Queue(std::string_view name, BlockPoolBase &pool, const NotifyCallba
 }
 
 template <typename Msg>
-auto Queue<Msg>::create(std::string_view name, const Ulong queueSizeInBytes, void *const queueStartPtr)
+auto Queue<Msg>::create(const std::string_view name, const Ulong queueSizeInBytes, void *const queueStartPtr)
 {
     static_assert(sizeof(Msg) % sizeof(sizeOfUlong) == 0, "Queue message size must be a multiple of word (32-bit).");
 

@@ -3,7 +3,7 @@
 
 namespace FileX
 {
-File::File(std::string_view fileName, MediaBase &media, const OpenOption option, NotifyCallback writeNotifyCallback)
+File::File(const std::string_view fileName, MediaBase &media, const OpenOption option, NotifyCallback writeNotifyCallback)
     : ThreadX::Native::FX_FILE{}, m_writeNotifyCallback{writeNotifyCallback}
 {
     using namespace ThreadX::Native;

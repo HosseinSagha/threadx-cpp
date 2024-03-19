@@ -42,7 +42,7 @@ class File : ThreadX::Native::FX_FILE
     using NotifyCallback = std::function<void(File &)>;
     using ReturnPair = std::pair<Error, ThreadX::Ulong64>;
 
-    File(std::string_view fileName, MediaBase &media, const OpenOption option = OpenOption::read,
+    File(const std::string_view fileName, MediaBase &media, const OpenOption option = OpenOption::read,
          NotifyCallback writeNotifyCallback = {});
     ~File();
     ReturnPair allocate(ThreadX::Ulong64 size, AllocateOption option = AllocateOption::strict);

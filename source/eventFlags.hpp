@@ -26,7 +26,7 @@ class EventFlags : Native::TX_EVENT_FLAGS_GROUP
 
     ///
     /// \param setNotifyCallback set notify callback. \sa NotifyCallback
-    EventFlags(std::string_view name, const NotifyCallback &setNotifyCallback = {});
+    EventFlags(const std::string_view name, const NotifyCallback &setNotifyCallback = {});
 
     ~EventFlags();
 

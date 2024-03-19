@@ -69,12 +69,12 @@ class Thread : Native::TX_THREAD
     /// \param preamptionThresh
     /// \param timeSlice
     /// \param startType
-    Thread(std::string_view name, BytePoolBase &pool, const Ulong stackSize = minimumStackSize,
+    Thread(const std::string_view name, BytePoolBase &pool, const Ulong stackSize = minimumStackSize,
            const NotifyCallback &entryExitNotifyCallback = {}, const Uint priority = defaultPriority,
            const Uint preamptionThresh = defaultPriority, const Ulong timeSlice = noTimeSlice,
            const StartType startType = StartType::autoStart);
 
-    Thread(std::string_view name, BlockPoolBase &pool, const NotifyCallback &entryExitNotifyCallback = {},
+    Thread(const std::string_view name, BlockPoolBase &pool, const NotifyCallback &entryExitNotifyCallback = {},
            const Uint priority = defaultPriority, const Uint preamptionThresh = defaultPriority,
            const Ulong timeSlice = noTimeSlice, const StartType startType = StartType::autoStart);
 

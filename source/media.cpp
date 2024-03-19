@@ -32,7 +32,7 @@ MediaBase::~MediaBase()
     fx_media_close(this);
 }
 
-Error MediaBase::volume(std::string_view volumeName)
+Error MediaBase::volume(const std::string_view volumeName)
 {
     assert(volumeName.length() < volumNameLength);
     return Error{fx_media_volume_set(this, const_cast<char *>(volumeName.data()))};
@@ -45,37 +45,37 @@ MediaBase::ReturnPairStr MediaBase::volume()
     return {error, volumeName};
 }
 
-Error MediaBase::createDir(std::string_view dirName)
+Error MediaBase::createDir(const std::string_view dirName)
 {
     return Error{fx_directory_create(this, const_cast<char *>(dirName.data()))};
 }
 
-Error MediaBase::deleteDir(std::string_view dirName)
+Error MediaBase::deleteDir(const std::string_view dirName)
 {
     return Error{fx_directory_delete(this, const_cast<char *>(dirName.data()))};
 }
 
-Error MediaBase::renameDir(std::string_view dirName, std::string_view newName)
+Error MediaBase::renameDir(const std::string_view dirName, const std::string_view newName)
 {
     return Error{fx_directory_rename(this, const_cast<char *>(dirName.data()), const_cast<char *>(newName.data()))};
 }
 
-Error MediaBase::createFile(std::string_view fileName)
+Error MediaBase::createFile(const std::string_view fileName)
 {
     return Error{fx_file_create(this, const_cast<char *>(fileName.data()))};
 }
 
-Error MediaBase::deleteFile(std::string_view fileName)
+Error MediaBase::deleteFile(const std::string_view fileName)
 {
     return Error{fx_file_delete(this, const_cast<char *>(fileName.data()))};
 }
 
-Error MediaBase::renameFile(std::string_view fileName, std::string_view newFileName)
+Error MediaBase::renameFile(const std::string_view fileName, const std::string_view newFileName)
 {
     return Error{fx_file_rename(this, const_cast<char *>(fileName.data()), const_cast<char *>(newFileName.data()))};
 }
 
-Error MediaBase::defaultDir(std::string_view newPath)
+Error MediaBase::defaultDir(const std::string_view newPath)
 {
     return Error{fx_directory_default_set(this, const_cast<char *>(newPath.data()))};
 }
@@ -87,7 +87,7 @@ MediaBase::ReturnPairStr MediaBase::defaultDir()
     return {error, path};
 }
 
-Error MediaBase::localDir(std::string_view newPath)
+Error MediaBase::localDir(const std::string_view newPath)
 {
     using namespace ThreadX::Native;
     FX_LOCAL_PATH localPath;

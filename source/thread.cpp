@@ -28,7 +28,7 @@ Error sleepUntil(const TickTimer::TimePoint &time)
 namespace ThreadX
 {
 Thread::Thread(
-    std::string_view name, BytePoolBase &pool, const Ulong stackSize, const NotifyCallback &entryExitNotifyCallback,
+    const std::string_view name, BytePoolBase &pool, const Ulong stackSize, const NotifyCallback &entryExitNotifyCallback,
     const Uint priority, const Uint preamptionThresh, const Ulong timeSlice, const StartType startType)
     : Native::TX_THREAD{}, m_pool{pool}, m_entryExitNotifyCallback{entryExitNotifyCallback}
 {
@@ -45,7 +45,7 @@ Thread::Thread(
     assert(error == Error::success);
 }
 
-Thread::Thread(std::string_view name, BlockPoolBase &pool, const NotifyCallback &entryExitNotifyCallback,
+Thread::Thread(const std::string_view name, BlockPoolBase &pool, const NotifyCallback &entryExitNotifyCallback,
                const Uint priority, const Uint preamptionThresh, const Ulong timeSlice, const StartType startType)
     : Native::TX_THREAD{}, m_pool{pool}, m_entryExitNotifyCallback{entryExitNotifyCallback}
 {

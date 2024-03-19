@@ -36,17 +36,17 @@ class MediaBase : protected ThreadX::Native::FX_MEDIA
     MediaBase &operator=(const MediaBase &) = delete;
 
     static Error fileSystemTime(const ThreadX::TickTimer::TimePoint &time);
-    Error volume(std::string_view volumeName);
+    Error volume(const std::string_view volumeName);
     ReturnPairStr volume();
-    Error createDir(std::string_view dirName);
-    Error deleteDir(std::string_view dirName);
-    Error renameDir(std::string_view dirName, std::string_view newName);
-    Error createFile(std::string_view fileName);
-    Error deleteFile(std::string_view fileName);
-    Error renameFile(std::string_view fileName, std::string_view newFileName);
-    Error defaultDir(std::string_view newPath);
+    Error createDir(const std::string_view dirName);
+    Error deleteDir(const std::string_view dirName);
+    Error renameDir(const std::string_view dirName, const std::string_view newName);
+    Error createFile(const std::string_view fileName);
+    Error deleteFile(const std::string_view fileName);
+    Error renameFile(const std::string_view fileName, const std::string_view newFileName);
+    Error defaultDir(const std::string_view newPath);
     ReturnPairStr defaultDir();
-    Error localDir(std::string_view newPath);
+    Error localDir(const std::string_view newPath);
     ReturnPairStr localDir();
     Error clearLocalDir();
 
