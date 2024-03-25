@@ -5,8 +5,14 @@ namespace ThreadX
 {
 Mutex::Mutex(const InheritMode inheritMode) : Native::TX_MUTEX{}
 {
+    Mutex("mutex", inheritMode);
+}
+
+Mutex::Mutex(const std::string_view name, const InheritMode inheritMode) : Native::TX_MUTEX{}
+{
     using namespace Native;
-    [[maybe_unused]] Error error{tx_mutex_create(this, const_cast<char *>("mutex"), std::to_underlying(inheritMode))};
+    [[maybe_unused]] Error error{
+        tx_mutex_create(this, const_cast<char *>(name.data()), std::to_underlying(inheritMode))};
     assert(error == Error::success);
 }
 
@@ -26,19 +32,14 @@ Error Mutex::try_lock()
     return try_lock_for(TickTimer::noWait);
 }
 
-Error Mutex::try_lock_until(const TickTimer::TimePoint &time)
-{
-    return try_lock_for(time - TickTimer::now());
-}
-
-Error Mutex::try_lock_for(const TickTimer::Duration &duration)
-{
-    return Error{tx_mutex_get(this, TickTimer::ticks(duration))};
-}
-
 Error Mutex::unlock()
 {
     return Error{tx_mutex_put(this)};
+}
+
+std::string_view Mutex::name()
+{
+    return tx_mutex_name;
 }
 
 Error Mutex::prioritise()

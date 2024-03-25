@@ -1,26 +1,7 @@
 #include "tickTimer.hpp"
-#include <utility>
 
 namespace ThreadX
 {
-TickTimer::TickTimer(const Duration &timeout, const ExpirationCallback &expirationCallback, const TimerType type,
-                     const ActivationType activationType)
-    : Native::TX_TIMER{}, m_timeout{timeout}, m_expirationCallback{expirationCallback},
-      m_id{expirationCallback ? ++m_idCounter : 0}, m_type{type}
-{
-    using namespace Native;
-    [[maybe_unused]] Error error{tx_timer_create(
-        this, const_cast<char *>("timer"), m_expirationCallback ? TickTimer::expirationCallback : nullptr,
-        reinterpret_cast<Ulong>(this), ticks(timeout), type == TimerType::SingleShot ? 0 : ticks(timeout),
-        std::to_underlying(activationType))};
-    assert(error == Error::success);
-}
-
-TickTimer::~TickTimer()
-{
-    tx_timer_delete(this);
-}
-
 void TickTimer::now(const TimePoint &time)
 {
     Native::tx_time_set(ticks(time.time_since_epoch()));
@@ -31,15 +12,33 @@ TickTimer::TimePoint TickTimer::now()
     return TimePoint{Duration{Native::tx_time_get()}};
 }
 
-std::time_t TickTimer::to_time_t(const TimePoint &time)
+TickTimer::TimePair TickTimer::to_time_t(const TimePoint &time)
 {
-    return duration_cast<std::chrono::seconds>(time.time_since_epoch()).count();
+    using namespace std::chrono;
+    auto frac_ms{time_point_cast<milliseconds>(time) - time_point_cast<milliseconds>(time_point_cast<seconds>(time))};
+    return {duration_cast<seconds>(time.time_since_epoch()).count(), frac_ms.count()};
 }
 
 TickTimer::TimePoint TickTimer::from_time_t(const std::time_t &time)
 {
     using namespace std::chrono;
     return time_point_cast<Duration>(std::chrono::time_point<TickTimer, seconds>(seconds{time}));
+}
+
+TickTimer::TmPair TickTimer::to_localtime(const TimePoint &time)
+{
+    auto [t, frac_ms]{to_time_t(time)};
+    return {*std::localtime(std::addressof(t)), frac_ms};
+}
+
+TickTimer::TimePoint TickTimer::from_localtime(const std::tm &localtime)
+{
+    return from_time_t(mktime(const_cast<std::tm *>(std::addressof(localtime))));
+}
+
+TickTimer::~TickTimer()
+{
+    tx_timer_delete(this);
 }
 
 Error TickTimer::activate()

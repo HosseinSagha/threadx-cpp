@@ -22,75 +22,39 @@ EventFlags::~EventFlags()
     tx_event_flags_delete(this);
 }
 
-Error EventFlags::set(const BitMask &bitMask)
+Error EventFlags::set(const Bitmask &bitMask)
 {
     return Error{tx_event_flags_set(this, bitMask.to_ulong(), std::to_underlying(Option::orInto))};
 }
 
-Error EventFlags::clear(const BitMask &bitMask)
+Error EventFlags::clear(const Bitmask &bitMask)
 {
     return Error{tx_event_flags_set(this, (~bitMask).to_ulong(), std::to_underlying(Option::andInto))};
 }
 
-EventFlags::ReturnPair EventFlags::get(const BitMask &bitMask, const EventOption eventOption)
+EventFlags::BitmaskPair EventFlags::get(const Bitmask &bitMask, const EventOption eventOption)
 {
     return waitAllFor(bitMask, TickTimer::noWait, eventOption);
 }
 
-EventFlags::ReturnPair EventFlags::waitAll(const BitMask &bitMask, const EventOption eventOption)
+EventFlags::BitmaskPair EventFlags::waitAll(const Bitmask &bitMask, const EventOption eventOption)
 {
     return waitAllFor(bitMask, TickTimer::waitForever, eventOption);
 }
 
-EventFlags::ReturnPair EventFlags::waitAllUntil(
-    const BitMask &bitMask, const TickTimer::TimePoint &time, const EventOption eventOption)
-{
-    return waitAllFor(bitMask, time - TickTimer::now(), eventOption);
-}
-
-EventFlags::ReturnPair EventFlags::waitAllFor(
-    const BitMask &bitMask, const TickTimer::Duration &waitDuration, const EventOption eventOption)
-{
-    auto option{Option::allClear};
-    if (eventOption == EventOption::dontClear)
-    {
-        option = Option::all;
-    }
-
-    return waitFor(bitMask, waitDuration, option);
-}
-
-EventFlags::ReturnPair EventFlags::waitAny(const BitMask &bitMask, const EventOption eventOption)
+EventFlags::BitmaskPair EventFlags::waitAny(const Bitmask &bitMask, const EventOption eventOption)
 {
     return waitAnyFor(bitMask, TickTimer::waitForever, eventOption);
 }
 
-EventFlags::ReturnPair EventFlags::waitAnyUntil(
-    const BitMask &bitMask, const TickTimer::TimePoint &time, const EventOption eventOption)
-{
-    return waitAnyFor(bitMask, time - TickTimer::now(), eventOption);
-}
-
-EventFlags::ReturnPair EventFlags::waitAnyFor(
-    const BitMask &bitMask, const TickTimer::Duration &waitDuration, const EventOption eventOption)
-{
-    auto option{Option::anyClear};
-    if (eventOption == EventOption::dontClear)
-    {
-        option = Option::any;
-    }
-
-    return waitFor(bitMask, waitDuration, option);
-}
-
-EventFlags::ReturnPair EventFlags::waitFor(
-    const BitMask &bitMask, const TickTimer::Duration &waitDuration, const Option option)
+EventFlags::BitmaskPair EventFlags::waitFor(
+    const Bitmask &bitMask, const TickTimer::Duration &waitDuration, const Option option)
 {
     Ulong actualFlags{};
     Error error{tx_event_flags_get(this, bitMask.to_ulong(), std::to_underlying(option), std::addressof(actualFlags),
                                    TickTimer::ticks(waitDuration))};
 
-    return {error, BitMask{actualFlags}};
+    return {error, Bitmask{actualFlags}};
 }
 
 std::string_view EventFlags::name()

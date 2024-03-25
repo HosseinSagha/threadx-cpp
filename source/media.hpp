@@ -10,7 +10,7 @@
 
 namespace FileX
 {
-enum class FaultTolerant : bool
+enum class FaultTolerantMode : bool
 {
     disable,
     enable
@@ -27,17 +27,19 @@ enum class SectorSize : ThreadX::Uint
 class MediaBase : protected ThreadX::Native::FX_MEDIA
 {
   public:
-    using ReturnPair = std::pair<Error, ThreadX::Ulong64>;
-    using ReturnPairStr = std::pair<Error, std::string_view>;
+    using Ulong64Pair = std::pair<Error, ThreadX::Ulong64>;
+    using StrPair = std::pair<Error, std::string_view>;
 
     friend class File;
 
     MediaBase(const MediaBase &) = delete;
     MediaBase &operator=(const MediaBase &) = delete;
 
-    static Error fileSystemTime(const ThreadX::TickTimer::TimePoint &time);
+    template <class Clock, typename Duration>
+    static auto fileSystemTime(const std::chrono::time_point<Clock, Duration> &time);
+
     Error volume(const std::string_view volumeName);
-    ReturnPairStr volume();
+    StrPair volume();
     Error createDir(const std::string_view dirName);
     Error deleteDir(const std::string_view dirName);
     Error renameDir(const std::string_view dirName, const std::string_view newName);
@@ -45,12 +47,12 @@ class MediaBase : protected ThreadX::Native::FX_MEDIA
     Error deleteFile(const std::string_view fileName);
     Error renameFile(const std::string_view fileName, const std::string_view newFileName);
     Error defaultDir(const std::string_view newPath);
-    ReturnPairStr defaultDir();
+    StrPair defaultDir();
     Error localDir(const std::string_view newPath);
-    ReturnPairStr localDir();
+    StrPair localDir();
     Error clearLocalDir();
 
-    ReturnPair space();
+    Ulong64Pair space();
 
     ///  This service is typically called when I/O errors are detected
     Error abort();
@@ -71,6 +73,28 @@ class MediaBase : protected ThreadX::Native::FX_MEDIA
     virtual ~MediaBase();
 };
 
+template <class Clock, typename Duration>
+auto MediaBase::fileSystemTime(const std::chrono::time_point<Clock, Duration> &time)
+{
+    auto [localTime,
+          frac_ms]{ThreadX::TickTimer::to_localtime(std::chrono::time_point_cast<ThreadX::TickTimer, ThreadX::TickTimer::Duration>(time))};
+
+    if (Error error{
+            ThreadX::Native::fx_system_date_set(localTime.tm_year + 1900, localTime.tm_mon + 1, localTime.tm_mday)};
+        error != Error::success)
+    {
+        return error;
+    }
+
+    if (Error error{ThreadX::Native::fx_system_time_set(localTime.tm_hour, localTime.tm_min, localTime.tm_sec)};
+        error != Error::success)
+    {
+        return error;
+    }
+
+    return Error::success;
+}
+
 template <SectorSize N = SectorSize::halfAKilobyte> class Media : public MediaBase
 {
   public:
@@ -84,7 +108,7 @@ template <SectorSize N = SectorSize::halfAKilobyte> class Media : public MediaBa
     Media(const Media &) = delete;
     Media &operator=(const Media &) = delete;
 
-    auto open(const FaultTolerant mode = FaultTolerant::enable);
+    auto open(const FaultTolerantMode mode = FaultTolerantMode::enable);
     auto format(const ThreadX::Ulong storageSize, const ThreadX::Uint sectorPerCluster = 1,
                 const ThreadX::Uint directoryEntries = 32);
     auto writeSector(const ThreadX::Ulong sectorNo, const std::span<std::byte, std::to_underlying(N)> sectorData);
@@ -146,7 +170,7 @@ Media<N>::Media(
     }
 }
 
-template <SectorSize N> auto Media<N>::open(const FaultTolerant mode)
+template <SectorSize N> auto Media<N>::open(const FaultTolerantMode mode)
 {
     using namespace ThreadX::Native;
 
@@ -157,12 +181,12 @@ template <SectorSize N> auto Media<N>::open(const FaultTolerant mode)
         return error;
     }
 
-    if (mode == FaultTolerant::enable)
+    if (mode == FaultTolerantMode::enable)
     {
 #ifdef FX_ENABLE_FAULT_TOLERANT
         return Error{fx_fault_tolerant_enable(this, m_faultTolerantCache.data(), faultTolerantCacheSize)};
 #else
-        assert(mode == FaultTolerant::disable);
+        assert(mode == FaultTolerantMode::disable);
 #endif
     }
 

@@ -48,7 +48,8 @@ class Thread : Native::TX_THREAD
   public:
     using NotifyCallback = std::function<void(Thread &, const NotifyCondition)>;
     using ErrorCallback = std::function<void(Thread &)>;
-    using ReturnPair = std::pair<Error, Uint>;
+    using UintPair = std::pair<Error, Uint>;
+    using UlongPair = std::pair<Error, Ulong>;
     using ID = uintptr_t;
     using StackInfo = struct
     {
@@ -104,7 +105,7 @@ class Thread : Native::TX_THREAD
 
     /// aborts sleep or any other object suspension of the specified thread.
     /// If the wait is aborted, a Error::waitAborted is returned from the service that the thread was waiting on.
-    Error waitAbort();
+    Error abortWait();
 
     uintptr_t id();
 
@@ -115,18 +116,22 @@ class Thread : Native::TX_THREAD
     /// Changes preemption-threshold of application thread.
     /// \param newPreempt
     /// \return
-    ReturnPair changePreemption(const auto newPreempt);
+    UintPair preemption(const auto newPreempt);
+
+    Uint preemption();
 
     /// Change priority of application thread.
     /// \param newPriority
     /// \return
-    ReturnPair changePriority(const auto newPriority);
+    UintPair priority(const auto newPriority);
+
+    Uint priority();
 
     /// Changes time-slice of application thread.
     /// Using preemption-threshold disables time-slicing for the specified thread.
     /// \param newTimeSlice
     /// \return
-    ReturnPair changeTimeSlice(const auto newTimeSlice);
+    UlongPair timeSlice(const auto newTimeSlice);
 
     void join();
 
@@ -157,9 +162,15 @@ uintptr_t id();
 /// relinquishes processor control to other ready-to-run threads at the same or higher priority
 void yield();
 
+template <class Clock, typename Duration> auto sleepUntil(const std::chrono::time_point<Clock, Duration> &time)
+{
+    return sleepFor(time - Clock::now());
+}
+
 /// causes the calling thread to suspend for the specified time
 /// \param duration
-Error sleepFor(const TickTimer::Duration &duration);
-
-Error sleepUntil(const TickTimer::TimePoint &time);
+template <typename Rep, typename Period> auto sleepFor(const std::chrono::duration<Rep, Period> &duration)
+{
+    return Error{Native::tx_thread_sleep(TickTimer::ticks(std::chrono::duration_cast<TickTimer::Duration>(duration)))};
+}
 }; // namespace ThreadX::ThisThread

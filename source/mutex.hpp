@@ -33,6 +33,7 @@ class Mutex : Native::TX_MUTEX
   public:
     /// \param inheritMode
     Mutex(const InheritMode inheritMode = InheritMode::noInherit);
+    Mutex(const std::string_view name, const InheritMode inheritMode = InheritMode::noInherit);
 
     /// destructor
     ~Mutex();
@@ -48,13 +49,15 @@ class Mutex : Native::TX_MUTEX
     // must be used for calls from initialization, timers, and ISRs
     Error try_lock();
 
-    Error try_lock_until(const TickTimer::TimePoint &time);
+    template <class Clock, typename Duration> auto try_lock_until(const std::chrono::time_point<Clock, Duration> &time);
 
-    Error try_lock_for(const TickTimer::Duration &duration);
+    template <typename Rep, typename Period> auto try_lock_for(const std::chrono::duration<Rep, Period> &duration);
 
     /// decrements the ownership count of the specified mutex.
     /// If the ownership count is zero, the mutex is made available.
     Error unlock();
+
+    std::string_view name();
 
     /// Places the highest priority thread suspended for ownership of the mutex at the front of the suspension list.
     /// All other threads remain in the same FIFO order they were suspended in.
@@ -62,4 +65,15 @@ class Mutex : Native::TX_MUTEX
 
     uintptr_t lockingThreadID() const;
 };
+
+template <class Clock, typename Duration>
+auto Mutex::try_lock_until(const std::chrono::time_point<Clock, Duration> &time)
+{
+    return try_lock_for(time - Clock::now());
+}
+
+template <typename Rep, typename Period> auto Mutex::try_lock_for(const std::chrono::duration<Rep, Period> &duration)
+{
+    return Error{tx_mutex_get(this, TickTimer::ticks(std::chrono::duration_cast<TickTimer::Duration>(duration)))};
+}
 } // namespace ThreadX

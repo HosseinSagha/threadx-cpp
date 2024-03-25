@@ -32,6 +32,7 @@ class Logger
     ~Logger() = delete;
 
   private:
+    static void addTime();
     static void addColourControl(const LogType logType);
     static void addMessage(const LogType logType, const std::string_view string);
 
@@ -49,6 +50,8 @@ void Logger::log(
     if (logType <= m_logLevel)
     {
         ThreadX::LockGuard lockGuard{m_mutex};
+        m_message = RTT_CTRL_RESET;
+        addTime();
         addColourControl(logType);
         addMessage(logType, format);
         SEGGER_RTT_printf(
@@ -59,5 +62,5 @@ void Logger::log(
 #define LOG_CLR() Logger::clear()
 #define LOG_ERR(...) Logger::log(LogType::error, std::source_location::current(), __VA_ARGS__)
 #define LOG_WARN(...) Logger::log(LogType::warning, std::source_location::current(), __VA_ARGS__)
-#define LOG_INFO(...) Logger::log(LogType::info, std::source_location::current(), __VA_ARGS__)
-#define LOG_DBG(...) Logger::log(LogType::debug, std::source_location::current(), __VA_ARGS__)
+#define LOG_INFO(...) Logger::log(LogType::info, {}, __VA_ARGS__)
+#define LOG_DBG(...) Logger::log(LogType::debug, {}, __VA_ARGS__)

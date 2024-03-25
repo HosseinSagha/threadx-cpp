@@ -25,8 +25,9 @@ class BytePoolBase : public MemoryPoolBase, protected Native::TX_BYTE_POOL
 
     Error release(void *memoryPtr) final;
 
+    template <typename Rep = TickTimer::rep, typename Period = TickTimer::period>
     std::pair<Error, void *> allocate(
-        const Ulong memorySizeInBytes, const TickTimer::Duration &waitDuration = TickTimer::noWait);
+        const Ulong memorySizeInBytes, const std::chrono::duration<Rep, Period> &waitDuration = TickTimer::noWait);
 
     /// Places the highest priority thread suspended for memory on this pool at the front of the suspension list.
     /// All other threads remain in the same FIFO order they were suspended in.
@@ -47,6 +48,16 @@ constexpr auto BytePoolBase::minimumPoolSize(std::span<const Ulong> memorySizes)
     }
 
     return poolSize;
+}
+
+template <typename Rep, typename Period>
+std::pair<Error, void *> BytePoolBase::allocate(
+    const Ulong memorySizeInBytes, const std::chrono::duration<Rep, Period> &waitDuration)
+{
+    void *memoryPtr;
+    Error error{tx_byte_allocate(this, std::addressof(memoryPtr), memorySizeInBytes,
+                                 TickTimer::ticks(std::chrono::duration_cast<TickTimer::Duration>(waitDuration)))};
+    return {error, memoryPtr};
 }
 
 /// byte memory pool from which to allocate the thread stacks and queues.
@@ -77,7 +88,8 @@ class BlockPoolBase : public MemoryPoolBase, protected Native::TX_BLOCK_POOL
 
     Error release(void *memoryPtr) final;
 
-    std::pair<Error, void *> allocate(const TickTimer::Duration &waitDuration = TickTimer::noWait);
+    template <typename Rep = TickTimer::rep, typename Period = TickTimer::period>
+    std::pair<Error, void *> allocate(const std::chrono::duration<Rep, Period> &waitDuration = TickTimer::noWait);
 
     /// Places the highest priority thread suspended for memory on this pool at the front of the suspension list.
     /// All other threads remain in the same FIFO order they were suspended in.
@@ -92,6 +104,15 @@ class BlockPoolBase : public MemoryPoolBase, protected Native::TX_BLOCK_POOL
 constexpr Ulong BlockPoolBase::blockSize()
 {
     return tx_block_pool_block_size;
+}
+
+template <typename Rep, typename Period>
+std::pair<Error, void *> BlockPoolBase::allocate(const std::chrono::duration<Rep, Period> &waitDuration)
+{
+    void *memoryPtr;
+    Error error{tx_block_allocate(this, std::addressof(memoryPtr),
+                                  TickTimer::ticks(std::chrono::duration_cast<TickTimer::Duration>(waitDuration)))};
+    return {error, memoryPtr};
 }
 
 template <Ulong Size, Ulong BlockSize>

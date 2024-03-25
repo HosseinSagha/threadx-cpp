@@ -3,7 +3,8 @@
 
 namespace FileX
 {
-File::File(const std::string_view fileName, MediaBase &media, const OpenOption option, NotifyCallback writeNotifyCallback)
+File::File(
+    const std::string_view fileName, MediaBase &media, const OpenOption option, NotifyCallback writeNotifyCallback)
     : ThreadX::Native::FX_FILE{}, m_writeNotifyCallback{writeNotifyCallback}
 {
     using namespace ThreadX::Native;
@@ -23,7 +24,7 @@ File::~File()
     fx_file_close(this);
 }
 
-File::ReturnPair File::allocate(ThreadX::Ulong64 size, AllocateOption option)
+MediaBase::Ulong64Pair File::allocate(ThreadX::Ulong64 size, AllocateOption option)
 {
     Error error{};
     ThreadX::Ulong64 allocatedSize{};

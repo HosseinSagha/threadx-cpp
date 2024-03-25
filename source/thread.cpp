@@ -2,34 +2,11 @@
 #include "kernel.hpp"
 #include <utility>
 
-namespace ThreadX::ThisThread
-{
-Thread::ID id()
-{
-    return Thread::ID(Native::tx_thread_identify());
-}
-
-void yield()
-{
-    Native::tx_thread_relinquish();
-}
-
-Error sleepFor(const TickTimer::Duration &duration)
-{
-    return Error{Native::tx_thread_sleep(TickTimer::ticks(duration))};
-}
-
-Error sleepUntil(const TickTimer::TimePoint &time)
-{
-    return sleepFor(time - TickTimer::now());
-}
-} // namespace ThreadX::ThisThread
-
 namespace ThreadX
 {
-Thread::Thread(
-    const std::string_view name, BytePoolBase &pool, const Ulong stackSize, const NotifyCallback &entryExitNotifyCallback,
-    const Uint priority, const Uint preamptionThresh, const Ulong timeSlice, const StartType startType)
+Thread::Thread(const std::string_view name, BytePoolBase &pool, const Ulong stackSize,
+               const NotifyCallback &entryExitNotifyCallback, const Uint priority, const Uint preamptionThresh,
+               const Ulong timeSlice, const StartType startType)
     : Native::TX_THREAD{}, m_pool{pool}, m_entryExitNotifyCallback{entryExitNotifyCallback}
 {
     auto [error, stackPtr] = pool.allocate(stackSize);
@@ -105,7 +82,7 @@ Error Thread::terminate()
     return Error{tx_thread_terminate(this)};
 }
 
-Error Thread::waitAbort()
+Error Thread::abortWait()
 {
     return Error{tx_thread_wait_abort(this)};
 }
@@ -125,7 +102,7 @@ ThreadState Thread::state() const
     return ThreadState{tx_thread_state};
 }
 
-Thread::ReturnPair Thread::changePreemption(const auto newPreempt)
+Thread::UintPair Thread::preemption(const auto newPreempt)
 {
     Uint oldPreempt{};
     Error error{tx_thread_preemption_change(this, newPreempt, std::addressof(oldPreempt))};
@@ -133,7 +110,12 @@ Thread::ReturnPair Thread::changePreemption(const auto newPreempt)
     return {error, oldPreempt};
 }
 
-Thread::ReturnPair Thread::changePriority(const auto newPriority)
+Uint Thread::preemption()
+{
+    return tx_thread_user_preempt_threshold;
+}
+
+Thread::UintPair Thread::priority(const auto newPriority)
 {
     Uint oldPriority;
     Error error{tx_thread_priority_change(this, newPriority, std::addressof(oldPriority))};
@@ -141,7 +123,12 @@ Thread::ReturnPair Thread::changePriority(const auto newPriority)
     return {error, oldPriority};
 }
 
-Thread::ReturnPair Thread::changeTimeSlice(const auto newTimeSlice)
+Uint Thread::priority()
+{
+    return tx_thread_user_priority;
+}
+
+Thread::UlongPair Thread::timeSlice(const auto newTimeSlice)
 {
     Ulong oldTimeSlice;
     Error error{tx_thread_time_slice_change(this, newTimeSlice, std::addressof(oldTimeSlice))};
@@ -219,3 +206,16 @@ void Thread::stackErrorNotifyCallback(Native::TX_THREAD *const threadPtr)
     thread.m_stackErrorNotifyCallback(thread);
 }
 } // namespace ThreadX
+
+namespace ThreadX::ThisThread
+{
+Thread::ID id()
+{
+    return Thread::ID(Native::tx_thread_identify());
+}
+
+void yield()
+{
+    Native::tx_thread_relinquish();
+}
+} // namespace ThreadX::ThisThread

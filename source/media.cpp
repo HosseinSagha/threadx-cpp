@@ -1,28 +1,8 @@
 #include "media.hpp"
+#include <cassert>
 
 namespace FileX
 {
-Error MediaBase::fileSystemTime(const ThreadX::TickTimer::TimePoint &time)
-{
-    auto t{ThreadX::TickTimer::to_time_t(time)};
-    auto localTime{std::localtime(std::addressof(t))};
-
-    if (Error error{
-            ThreadX::Native::fx_system_date_set(localTime->tm_year + 1900, localTime->tm_mon + 1, localTime->tm_mday)};
-        error != Error::success)
-    {
-        return error;
-    }
-
-    if (Error error{ThreadX::Native::fx_system_time_set(localTime->tm_hour, localTime->tm_min, localTime->tm_sec)};
-        error != Error::success)
-    {
-        return error;
-    }
-
-    return Error::success;
-}
-
 MediaBase::MediaBase() : ThreadX::Native::FX_MEDIA{}
 {
 }
@@ -38,7 +18,7 @@ Error MediaBase::volume(const std::string_view volumeName)
     return Error{fx_media_volume_set(this, const_cast<char *>(volumeName.data()))};
 }
 
-MediaBase::ReturnPairStr MediaBase::volume()
+MediaBase::StrPair MediaBase::volume()
 {
     char volumeName[volumNameLength];
     Error error{fx_media_volume_get(this, volumeName, FX_BOOT_SECTOR)};
@@ -80,7 +60,7 @@ Error MediaBase::defaultDir(const std::string_view newPath)
     return Error{fx_directory_default_set(this, const_cast<char *>(newPath.data()))};
 }
 
-MediaBase::ReturnPairStr MediaBase::defaultDir()
+MediaBase::StrPair MediaBase::defaultDir()
 {
     char *path = nullptr;
     Error error{fx_directory_default_get(this, std::addressof(path))};
@@ -94,7 +74,7 @@ Error MediaBase::localDir(const std::string_view newPath)
     return Error{fx_directory_local_path_set(this, std::addressof(localPath), const_cast<char *>(newPath.data()))};
 }
 
-MediaBase::ReturnPairStr MediaBase::localDir()
+MediaBase::StrPair MediaBase::localDir()
 {
     char *path = nullptr;
     Error error{fx_directory_local_path_get(this, std::addressof(path))};
@@ -106,7 +86,7 @@ Error MediaBase::clearLocalDir()
     return Error{fx_directory_local_path_clear(this)};
 }
 
-MediaBase::ReturnPair MediaBase::space()
+MediaBase::Ulong64Pair MediaBase::space()
 {
     ThreadX::Ulong64 spaceLeft{};
     Error error{fx_media_extended_space_available(this, std::addressof(spaceLeft))};

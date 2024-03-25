@@ -40,12 +40,11 @@ class File : ThreadX::Native::FX_FILE
   public:
     static constexpr ThreadX::Ulong readBufferSize{};
     using NotifyCallback = std::function<void(File &)>;
-    using ReturnPair = std::pair<Error, ThreadX::Ulong64>;
 
     File(const std::string_view fileName, MediaBase &media, const OpenOption option = OpenOption::read,
          NotifyCallback writeNotifyCallback = {});
     ~File();
-    ReturnPair allocate(ThreadX::Ulong64 size, AllocateOption option = AllocateOption::strict);
+    MediaBase::Ulong64Pair allocate(ThreadX::Ulong64 size, AllocateOption option = AllocateOption::strict);
     Error truncate(ThreadX::Ulong64 newSize, TruncateOption option = TruncateOption::noRelease);
     Error seek(const ThreadX::Ulong64 offset);
     Error relativeSeek(const ThreadX::Ulong64 offset, const SeekFrom from = SeekFrom::forward);

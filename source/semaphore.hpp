@@ -22,12 +22,13 @@ template <class T> class Semaphore : protected Native::TX_SEMAPHORE
     // must be used for calls from initialization, timers, and ISRs
     auto tryAcquire();
 
-    auto tryAcquireUntil(const TickTimer::TimePoint &time);
+    template <class Clock, typename Duration>
+    auto tryAcquireUntil(const std::chrono::time_point<Clock, Duration> &time);
 
     /// retrieves an instance (a single count) from the specified counting semaphore.
     /// As a result, the specified semaphore's count is decreased by one.
     /// \param waitDuration
-    auto tryAcquireFor(const TickTimer::Duration &waitDuration);
+    template <typename Rep, typename Period> auto tryAcquireFor(const std::chrono::duration<Rep, Period> &waitDuration);
 
     auto release();
 
@@ -62,7 +63,7 @@ template <class T> class Semaphore : protected Native::TX_SEMAPHORE
     const NotifyCallback m_releaseNotifyCallback;
 };
 
-template <typename T>
+template <class T>
 Semaphore<T>::Semaphore(
     const std::string_view name, const Ulong initialCount, const NotifyCallback &releaseNotifyCallback)
     : Native::TX_SEMAPHORE{}, m_releaseNotifyCallback{releaseNotifyCallback}
@@ -78,37 +79,42 @@ Semaphore<T>::Semaphore(
     }
 }
 
-template <typename T> Semaphore<T>::~Semaphore()
+template <class T> Semaphore<T>::~Semaphore()
 {
     tx_semaphore_delete(this);
 }
 
-template <typename T> auto Semaphore<T>::acquire()
+template <class T> auto Semaphore<T>::acquire()
 {
     return tryAcquireFor(TickTimer::waitForever);
 }
 
-template <typename T> auto Semaphore<T>::tryAcquire()
+template <class T> auto Semaphore<T>::tryAcquire()
 {
     return tryAcquireFor(TickTimer::noWait);
 }
 
-template <typename T> auto Semaphore<T>::tryAcquireUntil(const TickTimer::TimePoint &time)
+template <class T>
+template <class Clock, typename Duration>
+auto Semaphore<T>::tryAcquireUntil(const std::chrono::time_point<Clock, Duration> &time)
 {
-    return tryAcquireFor(time - TickTimer::now());
+    return tryAcquireFor(time - Clock::now());
 }
 
-template <typename T> auto Semaphore<T>::tryAcquireFor(const TickTimer::Duration &waitDuration)
+template <class T>
+template <typename Rep, typename Period>
+auto Semaphore<T>::tryAcquireFor(const std::chrono::duration<Rep, Period> &waitDuration)
 {
-    return Error{tx_semaphore_get(this, TickTimer::ticks(waitDuration))};
+    return Error{
+        tx_semaphore_get(this, TickTimer::ticks(std::chrono::duration_cast<TickTimer::Duration>(waitDuration)))};
 }
 
-template <typename T> auto Semaphore<T>::release()
+template <class T> auto Semaphore<T>::release()
 {
     return static_cast<T &>(*this).releaseImpl();
 }
 
-template <typename T> auto Semaphore<T>::release(Ulong count)
+template <class T> auto Semaphore<T>::release(Ulong count)
 {
     while (count > 0)
     {
@@ -123,27 +129,27 @@ template <typename T> auto Semaphore<T>::release(Ulong count)
     return Error::success;
 }
 
-template <typename T> auto Semaphore<T>::releaseBoundedTo(const Ulong ceiling)
+template <class T> auto Semaphore<T>::releaseBoundedTo(const Ulong ceiling)
 {
     return Error{tx_semaphore_ceiling_put(this, ceiling)};
 }
 
-template <typename T> auto Semaphore<T>::prioritise()
+template <class T> auto Semaphore<T>::prioritise()
 {
     return Error{tx_semaphore_prioritize(this)};
 }
 
-template <typename T> auto Semaphore<T>::name()
+template <class T> auto Semaphore<T>::name()
 {
     return std::string_view(tx_semaphore_name);
 }
 
-template <typename T> auto Semaphore<T>::count() const
+template <class T> auto Semaphore<T>::count() const
 {
     return tx_semaphore_count;
 }
 
-template <typename T> void Semaphore<T>::releaseNotifyCallback(auto notifySemaphorePtr)
+template <class T> void Semaphore<T>::releaseNotifyCallback(auto notifySemaphorePtr)
 {
     auto &semaphore{static_cast<Semaphore &>(*notifySemaphorePtr)};
     semaphore.m_releaseNotifyCallback(semaphore);
