@@ -3,9 +3,8 @@
 
 namespace ThreadX
 {
-Mutex::Mutex(const InheritMode inheritMode) : Native::TX_MUTEX{}
+Mutex::Mutex(const InheritMode inheritMode) : Mutex("mutex", inheritMode)
 {
-    Mutex("mutex", inheritMode);
 }
 
 Mutex::Mutex(const std::string_view name, const InheritMode inheritMode) : Native::TX_MUTEX{}

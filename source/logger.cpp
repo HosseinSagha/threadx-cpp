@@ -5,7 +5,6 @@ void Logger::init(const LogType logLevel, const size_t reservedMsgSize)
 {
     m_message.reserve(reservedMsgSize);
     m_logLevel = logLevel;
-    std::setlocale(LC_ALL, "en_AU.UTF-8");
 }
 
 void Logger::clear()
@@ -18,11 +17,8 @@ void Logger::clear()
 
 void Logger::addTime()
 {
-    auto [t, frac_ms]{ThreadX::TickTimer::to_localtime(ThreadX::TickTimer::now())};
-    char tstr[50];
-    std::strftime(tstr, 50, "x", std::addressof(t));
-    m_message += tstr + std::string(".") + std::to_string(frac_ms);
-    // m_message += std::put_time(std::addressof(t), "x");
+    auto [t, frac_ms]{ThreadX::TickTimer::to_time_t(ThreadX::TickTimer::now())};
+    m_message += std::to_string(t) + std::string(".") + std::to_string(frac_ms) + " ";
 }
 
 void Logger::addColourControl(const LogType logType)

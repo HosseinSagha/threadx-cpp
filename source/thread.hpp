@@ -60,7 +60,8 @@ class Thread : Native::TX_THREAD
     };
 
     static constexpr Uint defaultPriority{16}; ///
-    static constexpr Ulong noTimeSlice{};      ///
+    static constexpr Uint lowestPriority{TX_MAX_PRIORITIES - 1};
+    static constexpr Ulong noTimeSlice{}; ///
     static constexpr Ulong minimumStackSize{TX_MINIMUM_STACK};
 
     /// Constructor
