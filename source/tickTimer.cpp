@@ -56,12 +56,12 @@ Error TickTimer::change(const Duration &timeout, const ActivationType activation
     return change(timeout, m_type, activationType);
 }
 
-Error TickTimer::change(const Duration &timeout, const TimerType type, const ActivationType activationType)
+Error TickTimer::change(const Duration &timeout, const Type type, const ActivationType activationType)
 {
     Error error{deactivate()};
     assert(error == Error::success);
 
-    error = Error{tx_timer_change(this, ticks(timeout), type == TimerType::SingleShot ? 0 : ticks(timeout))};
+    error = Error{tx_timer_change(this, ticks(timeout), type == Type::SingleShot ? 0 : ticks(timeout))};
 
     m_timeout = timeout;
     m_type = type;

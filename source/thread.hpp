@@ -9,43 +9,43 @@
 
 namespace ThreadX
 {
-///
-enum class ThreadState : Uint
-{
-    ready,
-    completed,
-    terminated,
-    suspended,
-    sleep,
-    queueSusp,
-    SemaphoreSusp,
-    evenyFlag,
-    blockMemory,
-    byteMemory,
-    ioDriver,
-    file,
-    tcpIP,
-    mutexSusp,
-    priorityChange
-};
-
-///
-enum class StartType : Uint
-{
-    dontStart, ///< dontStart
-    autoStart  ///< autoStart
-};
-
-enum class NotifyCondition : Uint
-{
-    entry,
-    exit
-};
-
 /// pure vitual class to inherit application threads from
 class Thread : Native::TX_THREAD
 {
   public:
+    ///
+    enum class State : Uint
+    {
+        ready,
+        completed,
+        terminated,
+        suspended,
+        sleep,
+        queueSusp,
+        SemaphoreSusp,
+        evenyFlag,
+        blockMemory,
+        byteMemory,
+        ioDriver,
+        file,
+        tcpIP,
+        mutexSusp,
+        priorityChange
+    };
+
+    ///
+    enum class StartType : Uint
+    {
+        dontStart, ///< dontStart
+        autoStart  ///< autoStart
+    };
+
+    enum class NotifyCondition : Uint
+    {
+        entry,
+        exit
+    };
+
     using NotifyCallback = std::function<void(Thread &, const NotifyCondition)>;
     using ErrorCallback = std::function<void(Thread &)>;
     using UintPair = std::pair<Error, Uint>;
@@ -96,7 +96,7 @@ class Thread : Native::TX_THREAD
     Error suspend();
 
     /// resets the specified thread to execute at the entry point defined at thread creation.
-    /// The thread must be in either a ThreadState::completed or ThreadState::terminated state for it to be reset.
+    /// The thread must be in either a State::completed or State::terminated state for it to be reset.
     /// The thread must be resumed for it to execute again.
     Error restart();
 
@@ -112,7 +112,7 @@ class Thread : Native::TX_THREAD
 
     std::string_view name();
 
-    ThreadState state() const;
+    State state() const;
 
     /// Changes preemption-threshold of application thread.
     /// \param newPreempt

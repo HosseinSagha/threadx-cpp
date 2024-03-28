@@ -10,16 +10,6 @@
 
 namespace ThreadX
 {
-class Mutex;
-
-using LockGuard = std::lock_guard<Mutex>;
-using ScopedLock = std::scoped_lock<Mutex>;
-using UniqueLock = std::unique_lock<Mutex>;
-
-using timedMutex = Mutex;
-using recursiveMutex = Mutex;
-using recursiveTimedMutex = Mutex;
-
 /// Inherit mode
 enum class InheritMode : Uint
 {
@@ -32,8 +22,8 @@ class Mutex : Native::TX_MUTEX
 {
   public:
     /// \param inheritMode
-    Mutex(const InheritMode inheritMode = InheritMode::noInherit);
-    Mutex(const std::string_view name, const InheritMode inheritMode = InheritMode::noInherit);
+    Mutex(const InheritMode inheritMode = InheritMode::inherit);
+    Mutex(const std::string_view name, const InheritMode inheritMode = InheritMode::inherit);
 
     /// destructor
     ~Mutex();
@@ -43,7 +33,7 @@ class Mutex : Native::TX_MUTEX
 
     /// attempts to obtain exclusive ownership of the specified mutex. If the calling thread already owns the mutex, an
     /// internal counter is incremented and a successful status is returned.
-    /// \param waitDuration
+    /// \param duration
     Error lock();
 
     // must be used for calls from initialization, timers, and ISRs
@@ -76,4 +66,12 @@ template <typename Rep, typename Period> auto Mutex::try_lock_for(const std::chr
 {
     return Error{tx_mutex_get(this, TickTimer::ticks(std::chrono::duration_cast<TickTimer::Duration>(duration)))};
 }
+
+using LockGuard = std::lock_guard<Mutex>;
+using ScopedLock = std::scoped_lock<Mutex>;
+using UniqueLock = std::unique_lock<Mutex>;
+
+using timedMutex = Mutex;
+using recursiveMutex = Mutex;
+using recursiveTimedMutex = Mutex;
 } // namespace ThreadX

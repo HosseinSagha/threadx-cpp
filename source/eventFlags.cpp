@@ -24,35 +24,35 @@ EventFlags::~EventFlags()
 
 Error EventFlags::set(const Bitmask &bitMask)
 {
-    return Error{tx_event_flags_set(this, bitMask.to_ulong(), std::to_underlying(Option::orInto))};
+    return Error{tx_event_flags_set(this, bitMask.to_ulong(), std::to_underlying(FlagOption::orInto))};
 }
 
 Error EventFlags::clear(const Bitmask &bitMask)
 {
-    return Error{tx_event_flags_set(this, (~bitMask).to_ulong(), std::to_underlying(Option::andInto))};
+    return Error{tx_event_flags_set(this, (~bitMask).to_ulong(), std::to_underlying(FlagOption::andInto))};
 }
 
-EventFlags::BitmaskPair EventFlags::get(const Bitmask &bitMask, const EventOption eventOption)
+EventFlags::BitmaskPair EventFlags::get(const Bitmask &bitMask, const Option option)
 {
-    return waitAllFor(bitMask, TickTimer::noWait, eventOption);
+    return waitAllFor(bitMask, TickTimer::noWait, option);
 }
 
-EventFlags::BitmaskPair EventFlags::waitAll(const Bitmask &bitMask, const EventOption eventOption)
+EventFlags::BitmaskPair EventFlags::waitAll(const Bitmask &bitMask, const Option option)
 {
-    return waitAllFor(bitMask, TickTimer::waitForever, eventOption);
+    return waitAllFor(bitMask, TickTimer::waitForever, option);
 }
 
-EventFlags::BitmaskPair EventFlags::waitAny(const Bitmask &bitMask, const EventOption eventOption)
+EventFlags::BitmaskPair EventFlags::waitAny(const Bitmask &bitMask, const Option option)
 {
-    return waitAnyFor(bitMask, TickTimer::waitForever, eventOption);
+    return waitAnyFor(bitMask, TickTimer::waitForever, option);
 }
 
 EventFlags::BitmaskPair EventFlags::waitFor(
-    const Bitmask &bitMask, const TickTimer::Duration &waitDuration, const Option option)
+    const Bitmask &bitMask, const TickTimer::Duration &duration, const FlagOption flagOption)
 {
     Ulong actualFlags{};
-    Error error{tx_event_flags_get(this, bitMask.to_ulong(), std::to_underlying(option), std::addressof(actualFlags),
-                                   TickTimer::ticks(waitDuration))};
+    Error error{tx_event_flags_get(this, bitMask.to_ulong(), std::to_underlying(flagOption),
+                                   std::addressof(actualFlags), TickTimer::ticks(duration))};
 
     return {error, Bitmask{actualFlags}};
 }

@@ -44,8 +44,14 @@ bool inThread()
 bool inIsr()
 {
     using namespace Native;
-    auto systemState{TX_THREAD_GET_SYSTEM_STATE()};
+    const Ulong systemState{TX_THREAD_GET_SYSTEM_STATE()};
     return systemState != TX_INITIALIZE_IS_FINISHED and systemState < TX_INITIALIZE_IN_PROGRESS;
+}
+
+State state()
+{
+    using namespace Native;
+    return (TX_THREAD_GET_SYSTEM_STATE() < TX_INITIALIZE_IN_PROGRESS) ? State::running : State::uninitialised;
 }
 }; // namespace ThreadX::Kernel
 

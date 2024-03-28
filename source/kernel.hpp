@@ -4,13 +4,20 @@
 
 namespace ThreadX::Native
 {
+extern "C" {
 #include "tx_initialize.h"
 #include "tx_thread.h"
-
+}
 } // namespace ThreadX::Native
 
 namespace ThreadX::Kernel
 {
+enum class State
+{
+    uninitialised,
+    running
+};
+
 /// Basic lockable class that prevents task and interrupt context switches while locked.
 /// it can either be used as a scoped object or for freely lock/unlucking.
 class CriticalSection
@@ -38,6 +45,8 @@ bool inThread();
 /// \return true if the current execution context is ISR, false otherwise
 
 bool inIsr();
+
+State state();
 }; // namespace ThreadX::Kernel
 
 namespace ThreadX

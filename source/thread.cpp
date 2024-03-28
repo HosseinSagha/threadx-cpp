@@ -97,9 +97,9 @@ std::string_view Thread::name()
     return tx_thread_name;
 }
 
-ThreadState Thread::state() const
+Thread::State Thread::state() const
 {
-    return ThreadState{tx_thread_state};
+    return State{tx_thread_state};
 }
 
 Thread::UintPair Thread::preemption(const auto newPreempt)
@@ -162,8 +162,8 @@ bool Thread::joinable()
 {
     // wait on itself resource deadlock and wait on finished thread.
     auto threadState{state()};
-    return id() != ThisThread::id() and threadState != ThreadState::completed and
-           threadState != ThreadState::terminated;
+    return id() != ThisThread::id() and threadState != State::completed and
+           threadState != State::terminated;
 }
 
 Thread::StackInfo Thread::stackInfo()

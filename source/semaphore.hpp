@@ -27,8 +27,8 @@ template <class T> class Semaphore : protected Native::TX_SEMAPHORE
 
     /// retrieves an instance (a single count) from the specified counting semaphore.
     /// As a result, the specified semaphore's count is decreased by one.
-    /// \param waitDuration
-    template <typename Rep, typename Period> auto tryAcquireFor(const std::chrono::duration<Rep, Period> &waitDuration);
+    /// \param duration
+    template <typename Rep, typename Period> auto tryAcquireFor(const std::chrono::duration<Rep, Period> &duration);
 
     auto release();
 
@@ -103,10 +103,9 @@ auto Semaphore<T>::tryAcquireUntil(const std::chrono::time_point<Clock, Duration
 
 template <class T>
 template <typename Rep, typename Period>
-auto Semaphore<T>::tryAcquireFor(const std::chrono::duration<Rep, Period> &waitDuration)
+auto Semaphore<T>::tryAcquireFor(const std::chrono::duration<Rep, Period> &duration)
 {
-    return Error{
-        tx_semaphore_get(this, TickTimer::ticks(std::chrono::duration_cast<TickTimer::Duration>(waitDuration)))};
+    return Error{tx_semaphore_get(this, TickTimer::ticks(std::chrono::duration_cast<TickTimer::Duration>(duration)))};
 }
 
 template <class T> auto Semaphore<T>::release()

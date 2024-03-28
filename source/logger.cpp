@@ -1,7 +1,7 @@
 #include "logger.hpp"
 #include "tickTimer.hpp"
 
-void Logger::init(const LogType logLevel, const size_t reservedMsgSize)
+void Logger::init(const Type logLevel, const size_t reservedMsgSize)
 {
     m_message.reserve(reservedMsgSize);
     m_logLevel = logLevel;
@@ -17,35 +17,35 @@ void Logger::clear()
 
 void Logger::addTime()
 {
-    auto [t, frac_ms]{ThreadX::TickTimer::to_time_t(ThreadX::TickTimer::now())};
+    const auto [t, frac_ms]{ThreadX::TickTimer::to_time_t(ThreadX::TickTimer::now())};
     m_message += std::to_string(t) + std::string(".") + std::to_string(frac_ms) + " ";
 }
 
-void Logger::addColourControl(const LogType logType)
+void Logger::addColourControl(const Type logType)
 {
     switch (logType)
     {
-    case LogType::error:
-        m_message += RTT_CTRL_TEXT_BRIGHT_RED "ERR:  ";
+    case Type::error:
+        m_message += RTT_CTRL_TEXT_BRIGHT_RED "ERR : ";
         break;
-    case LogType::warning:
+    case Type::warning:
         m_message += RTT_CTRL_TEXT_BRIGHT_YELLOW "WARN: ";
         break;
-    case LogType::info:
+    case Type::info:
         m_message += RTT_CTRL_TEXT_BRIGHT_GREEN "INFO: ";
         break;
-    case LogType::debug:
+    case Type::debug:
     default:
-        m_message += RTT_CTRL_TEXT_BRIGHT_MAGENTA "DBG:  ";
+        m_message += RTT_CTRL_TEXT_BRIGHT_MAGENTA "DBG : ";
         break;
     }
 }
 
-void Logger::addMessage(const LogType logType, const std::string_view string)
+void Logger::addMessage(const Type logType, const std::string_view string)
 {
     m_message += string;
 
-    if (logType <= LogType::warning)
+    if (logType <= Type::warning)
     {
         m_message += " (%s:%d) '%s'";
     }

@@ -6,16 +6,16 @@
 
 namespace ThreadX
 {
-enum class EventOption
-{
-    dontClear,
-    clear
-};
-
 /// Set and wait on event flags
 class EventFlags : Native::TX_EVENT_FLAGS_GROUP
 {
   public:
+    enum class Option
+    {
+        dontClear,
+        clear
+    };
+
     static constexpr size_t eventFlagBit{sizeof(Ulong) * CHAR_BIT};
     /// external callback type
     using NotifyCallback = std::function<void(EventFlags &)>;
@@ -37,32 +37,32 @@ class EventFlags : Native::TX_EVENT_FLAGS_GROUP
     Error clear(const Bitmask &bitMask = allBits);
 
     // must be used for calls from initialization, timers, and ISRs
-    BitmaskPair get(const Bitmask &bitMask = allBits, const EventOption eventOption = EventOption::clear);
+    BitmaskPair get(const Bitmask &bitMask = allBits, const Option option = Option::clear);
 
-    BitmaskPair waitAll(const Bitmask &bitMask, const EventOption eventOption = EventOption::clear);
+    BitmaskPair waitAll(const Bitmask &bitMask, const Option option = Option::clear);
 
     template <class Clock, typename Duration>
     auto waitAllUntil(const Bitmask &bitMask, const std::chrono::time_point<Clock, Duration> &time,
-                      const EventOption eventOption = EventOption::clear);
+                      const Option option = Option::clear);
 
     template <typename Rep, typename Period>
-    auto waitAllFor(const Bitmask &bitMask, const std::chrono::duration<Rep, Period> &waitDuration,
-                    const EventOption eventOption = EventOption::clear);
+    auto waitAllFor(const Bitmask &bitMask, const std::chrono::duration<Rep, Period> &duration,
+                    const Option option = Option::clear);
 
-    BitmaskPair waitAny(const Bitmask &bitMask, const EventOption eventOption = EventOption::clear);
+    BitmaskPair waitAny(const Bitmask &bitMask, const Option option = Option::clear);
 
     template <class Clock, typename Duration>
     auto waitAnyUntil(const Bitmask &bitMask, const std::chrono::time_point<Clock, Duration> &time,
-                      const EventOption eventOption = EventOption::clear);
+                      const Option option = Option::clear);
 
     template <typename Rep, typename Period>
-    auto waitAnyFor(const Bitmask &bitMask, const std::chrono::duration<Rep, Period> &waitDuration,
-                    const EventOption eventOption = EventOption::clear);
+    auto waitAnyFor(const Bitmask &bitMask, const std::chrono::duration<Rep, Period> &duration,
+                    const Option option = Option::clear);
 
     std::string_view name();
 
   private:
-    enum class Option : Uint
+    enum class FlagOption : Uint
     {
         any, ///< any resume, if any flag in bitmask is set
         orInto = any,
@@ -73,10 +73,10 @@ class EventFlags : Native::TX_EVENT_FLAGS_GROUP
     };
 
     /// \param bitMask flag bitmask to get
-    /// \param waitDuration Wait duration
+    /// \param duration Wait duration
     /// \param option \sa Option
     /// \return actual flags set
-    BitmaskPair waitFor(const Bitmask &bitMask, const TickTimer::Duration &waitDuration, const Option option);
+    BitmaskPair waitFor(const Bitmask &bitMask, const TickTimer::Duration &duration, const FlagOption flagOption);
 
     static void setNotifyCallback(auto notifyGroupPtr);
 
@@ -85,41 +85,41 @@ class EventFlags : Native::TX_EVENT_FLAGS_GROUP
 
 template <class Clock, typename Duration>
 auto EventFlags::waitAllUntil(
-    const Bitmask &bitMask, const std::chrono::time_point<Clock, Duration> &time, const EventOption eventOption)
+    const Bitmask &bitMask, const std::chrono::time_point<Clock, Duration> &time, const Option option)
 {
-    return waitAllFor(bitMask, time - Clock::now(), eventOption);
+    return waitAllFor(bitMask, time - Clock::now(), option);
 }
 
 template <typename Rep, typename Period>
 auto EventFlags::waitAllFor(
-    const Bitmask &bitMask, const std::chrono::duration<Rep, Period> &waitDuration, const EventOption eventOption)
+    const Bitmask &bitMask, const std::chrono::duration<Rep, Period> &duration, const Option option)
 {
-    auto option{Option::allClear};
-    if (eventOption == EventOption::dontClear)
+    auto flagOption{FlagOption::allClear};
+    if (option == Option::dontClear)
     {
-        option = Option::all;
+        flagOption = FlagOption::all;
     }
 
-    return waitFor(bitMask, waitDuration, option);
+    return waitFor(bitMask, duration, flagOption);
 }
 
 template <class Clock, typename Duration>
 auto EventFlags::waitAnyUntil(
-    const Bitmask &bitMask, const std::chrono::time_point<Clock, Duration> &time, const EventOption eventOption)
+    const Bitmask &bitMask, const std::chrono::time_point<Clock, Duration> &time, const Option option)
 {
-    return waitAnyFor(bitMask, time - Clock::now(), eventOption);
+    return waitAnyFor(bitMask, time - Clock::now(), option);
 }
 
 template <typename Rep, typename Period>
 auto EventFlags::waitAnyFor(
-    const Bitmask &bitMask, const std::chrono::duration<Rep, Period> &waitDuration, const EventOption eventOption)
+    const Bitmask &bitMask, const std::chrono::duration<Rep, Period> &duration, const Option option)
 {
-    auto option{Option::anyClear};
-    if (eventOption == EventOption::dontClear)
+    auto flagOption{FlagOption::anyClear};
+    if (option == Option::dontClear)
     {
-        option = Option::any;
+        flagOption = FlagOption::any;
     }
 
-    return waitFor(bitMask, std::chrono::duration_cast<TickTimer::Duration>(waitDuration), option);
+    return waitFor(bitMask, std::chrono::duration_cast<TickTimer::Duration>(duration), flagOption);
 }
 } // namespace ThreadX

@@ -57,10 +57,9 @@ template <typename Msg> class Queue : public QueueBase
     auto tryReceiveUntil(const std::chrono::time_point<Clock, Duration> &time);
 
     /// receive a message from queue
-    /// \param waitDuration
+    /// \param duration
     /// \return
-    template <typename Rep, typename Period>
-    MsgPair tryReceiveFor(const std::chrono::duration<Rep, Period> &waitDuration);
+    template <typename Rep, typename Period> MsgPair tryReceiveFor(const std::chrono::duration<Rep, Period> &duration);
 
     auto send(const Msg &message);
 
@@ -71,11 +70,11 @@ template <typename Msg> class Queue : public QueueBase
     auto trySendUntil(const Msg &message, const std::chrono::time_point<Clock, Duration> &time);
 
     ///
-    /// \param waitDuration
+    /// \param duration
     /// \param message
     /// \return
     template <typename Rep, typename Period>
-    auto trySendFor(const Msg &message, const std::chrono::duration<Rep, Period> &waitDuration);
+    auto trySendFor(const Msg &message, const std::chrono::duration<Rep, Period> &duration);
 
     auto sendFront(const Msg &message);
 
@@ -85,11 +84,11 @@ template <typename Msg> class Queue : public QueueBase
     template <class Clock, typename Duration>
     auto trySendFrontUntil(const Msg &message, const std::chrono::time_point<Clock, Duration> &time);
     ///
-    /// \param waitDuration
+    /// \param duration
     /// \param message
     /// \return
     template <typename Rep, typename Period>
-    auto trySendFrontFor(const Msg &message, const std::chrono::duration<Rep, Period> &waitDuration);
+    auto trySendFrontFor(const Msg &message, const std::chrono::duration<Rep, Period> &duration);
 
   private:
     auto create(const std::string_view name, const Ulong queueSizeInBytes, void *const queueStartPtr);
@@ -167,11 +166,11 @@ auto Queue<Msg>::tryReceiveUntil(const std::chrono::time_point<Clock, Duration> 
 
 template <typename Msg>
 template <typename Rep, typename Period>
-Queue<Msg>::MsgPair Queue<Msg>::tryReceiveFor(const std::chrono::duration<Rep, Period> &waitDuration)
+Queue<Msg>::MsgPair Queue<Msg>::tryReceiveFor(const std::chrono::duration<Rep, Period> &duration)
 {
     Msg message;
-    Error error{tx_queue_receive(this, std::addressof(message),
-                                 TickTimer::ticks(std::chrono::duration_cast<TickTimer::Duration>(waitDuration)))};
+    Error error{tx_queue_receive(
+        this, std::addressof(message), TickTimer::ticks(std::chrono::duration_cast<TickTimer::Duration>(duration)))};
     return {error, message};
 }
 
@@ -194,15 +193,15 @@ auto Queue<Msg>::trySendUntil(const Msg &message, const std::chrono::time_point<
 }
 
 ///
-/// \param waitDuration
+/// \param duration
 /// \param message
 /// \return
 template <typename Msg>
 template <typename Rep, typename Period>
-auto Queue<Msg>::trySendFor(const Msg &message, const std::chrono::duration<Rep, Period> &waitDuration)
+auto Queue<Msg>::trySendFor(const Msg &message, const std::chrono::duration<Rep, Period> &duration)
 {
     return Error{tx_queue_send(this, std::addressof(const_cast<Msg &>(message)),
-                               TickTimer::ticks(std::chrono::duration_cast<TickTimer::Duration>(waitDuration)))};
+                               TickTimer::ticks(std::chrono::duration_cast<TickTimer::Duration>(duration)))};
 }
 
 template <typename Msg> auto Queue<Msg>::sendFront(const Msg &message)
@@ -224,15 +223,15 @@ auto Queue<Msg>::trySendFrontUntil(const Msg &message, const std::chrono::time_p
 }
 
 ///
-/// \param waitDuration
+/// \param duration
 /// \param message
 /// \return
 template <typename Msg>
 template <typename Rep, typename Period>
-auto Queue<Msg>::trySendFrontFor(const Msg &message, const std::chrono::duration<Rep, Period> &waitDuration)
+auto Queue<Msg>::trySendFrontFor(const Msg &message, const std::chrono::duration<Rep, Period> &duration)
 {
     return Error{tx_queue_front_send(this, std::addressof(const_cast<Msg &>(message)),
-                                     TickTimer::ticks(std::chrono::duration_cast<TickTimer::Duration>(waitDuration)))};
+                                     TickTimer::ticks(std::chrono::duration_cast<TickTimer::Duration>(duration)))};
 }
 
 template <typename Msg> auto Queue<Msg>::sendNotifyCallback(auto queuePtr)
