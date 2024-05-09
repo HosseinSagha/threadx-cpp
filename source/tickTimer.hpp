@@ -1,6 +1,7 @@
 #pragma once
 
 #include "txCommon.hpp"
+#include <atomic>
 #include <chrono>
 #include <functional>
 #include <utility>
@@ -94,7 +95,7 @@ class TickTimer : Native::TX_TIMER
   private:
     static void expirationCallback(const Ulong timerPtr);
 
-    static inline size_t m_idCounter;
+    static inline std::atomic_size_t m_idCounter{1}; //id=0 is reserved for timers with no callback
     Duration m_timeout;
     const ExpirationCallback m_expirationCallback;
     const size_t m_id;
@@ -117,7 +118,7 @@ template <typename Rep, typename Period>
 TickTimer::TickTimer(const std::chrono::duration<Rep, Period> &timeout, const ExpirationCallback &expirationCallback,
                      const Type type, const ActivationType activationType)
     : Native::TX_TIMER{}, m_timeout{std::chrono::duration_cast<TickTimer::Duration>(timeout)},
-      m_expirationCallback{expirationCallback}, m_id{expirationCallback ? ++m_idCounter : 0}, m_type{type}
+      m_expirationCallback{expirationCallback}, m_id{expirationCallback ? m_idCounter.fetch_add(1) : 0}, m_type{type}
 {
     using namespace Native;
     [[maybe_unused]] Error error{tx_timer_create(

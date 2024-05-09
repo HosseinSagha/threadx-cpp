@@ -3,6 +3,7 @@
 #include "fxCommon.hpp"
 #include "tickTimer.hpp"
 #include <array>
+#include <atomic>
 #include <functional>
 #include <span>
 #include <string_view>
@@ -23,6 +24,8 @@ enum class SectorSize : ThreadX::Uint
     twoKiloBytes = 2048,
     fourKilobytes = 4096
 };
+
+auto constexpr defaultSectorSize{SectorSize::halfAKilobyte};
 
 class MediaBase : protected ThreadX::Native::FX_MEDIA
 {
@@ -67,7 +70,7 @@ class MediaBase : protected ThreadX::Native::FX_MEDIA
 
   protected:
     static constexpr size_t volumNameLength{12};
-    static inline bool m_fileSystemInitialised;
+    static inline std::atomic_flag m_fileSystemInitialised = ATOMIC_FLAG_INIT;
 
     MediaBase();
     virtual ~MediaBase();
@@ -76,8 +79,8 @@ class MediaBase : protected ThreadX::Native::FX_MEDIA
 template <class Clock, typename Duration>
 auto MediaBase::fileSystemTime(const std::chrono::time_point<Clock, Duration> &time)
 {
-    auto [localTime,
-          frac_ms]{ThreadX::TickTimer::to_localtime(std::chrono::time_point_cast<ThreadX::TickTimer, ThreadX::TickTimer::Duration>(time))};
+    auto [localTime, frac_ms]{ThreadX::TickTimer::to_localtime(
+        std::chrono::time_point_cast<ThreadX::TickTimer, ThreadX::TickTimer::Duration>(time))};
 
     if (Error error{
             ThreadX::Native::fx_system_date_set(localTime.tm_year + 1900, localTime.tm_mon + 1, localTime.tm_mday)};
@@ -95,7 +98,7 @@ auto MediaBase::fileSystemTime(const std::chrono::time_point<Clock, Duration> &t
     return Error::success;
 }
 
-template <SectorSize N = SectorSize::halfAKilobyte> class Media : public MediaBase
+template <SectorSize N = defaultSectorSize> class Media : public MediaBase
 {
   public:
     using NotifyCallback = std::function<void(Media &)>;
@@ -151,10 +154,9 @@ Media<N>::Media(
     : m_driverInfoPtr{driverInfoPtr}, m_openNotifyCallback{openNotifyCallback},
       m_closeNotifyCallback{closeNotifyCallback}
 {
-    if (not m_fileSystemInitialised)
+    if (not m_fileSystemInitialised.test_and_set())
     {
         ThreadX::Native::fx_system_initialize();
-        m_fileSystemInitialised = true;
     }
 
     if (m_closeNotifyCallback)
