@@ -22,7 +22,7 @@ Error QueueBase::flush()
     return Error{tx_queue_flush(this)};
 }
 
-std::string_view QueueBase::name()
+std::string_view QueueBase::name() const
 {
     return tx_queue_name;
 }

@@ -103,7 +103,7 @@ template <SectorSize N = defaultSectorSize> class Media : public MediaBase
   public:
     using NotifyCallback = std::function<void(Media &)>;
 
-    constexpr SectorSize sectorSize();
+    constexpr SectorSize sectorSize() const;
     //Once initialized by this constructor, the application should call fx_system_date_set and fx_system_time_set to start with an accurate system date and time.
     Media(void *driverInfoPtr = nullptr, const NotifyCallback &openNotifyCallback = {},
           const NotifyCallback &closeNotifyCallback = {});
@@ -143,7 +143,7 @@ template <SectorSize N = defaultSectorSize> class Media : public MediaBase
     std::array<uint8_t, std::to_underlying(N)> m_mediaMemory{};
 };
 
-template <SectorSize N> constexpr SectorSize Media<N>::sectorSize()
+template <SectorSize N> constexpr SectorSize Media<N>::sectorSize() const
 {
     return N;
 }

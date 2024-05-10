@@ -36,7 +36,7 @@ Error Mutex::unlock()
     return Error{tx_mutex_put(this)};
 }
 
-std::string_view Mutex::name()
+std::string_view Mutex::name() const
 {
     return tx_mutex_name;
 }

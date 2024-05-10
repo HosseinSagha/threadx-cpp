@@ -108,9 +108,9 @@ class Thread : Native::TX_THREAD
     /// If the wait is aborted, a Error::waitAborted is returned from the service that the thread was waiting on.
     Error abortWait();
 
-    uintptr_t id();
+    uintptr_t id() const;
 
-    std::string_view name();
+    std::string_view name() const;
 
     State state() const;
 
@@ -119,14 +119,14 @@ class Thread : Native::TX_THREAD
     /// \return
     UintPair preemption(const auto newPreempt);
 
-    Uint preemption();
+    Uint preemption() const;
 
     /// Change priority of application thread.
     /// \param newPriority
     /// \return
     UintPair priority(const auto newPriority);
 
-    Uint priority();
+    Uint priority() const;
 
     /// Changes time-slice of application thread.
     /// Using preemption-threshold disables time-slicing for the specified thread.
@@ -136,9 +136,9 @@ class Thread : Native::TX_THREAD
 
     void join();
 
-    bool joinable();
+    bool joinable() const;
 
-    StackInfo stackInfo();
+    StackInfo stackInfo() const;
 
   protected:
     virtual ~Thread();

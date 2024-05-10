@@ -30,6 +30,11 @@ BlockPoolBase::~BlockPoolBase()
     tx_block_pool_delete(this);
 }
 
+Ulong BlockPoolBase::blockSize() const
+{
+    return tx_block_pool_block_size;
+}
+
 Error BlockPoolBase::release(void *memoryPtr)
 {
     return Error{Native::tx_block_release(memoryPtr)};

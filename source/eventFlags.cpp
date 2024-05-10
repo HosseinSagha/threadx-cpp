@@ -57,7 +57,7 @@ EventFlags::BitmaskPair EventFlags::waitFor(
     return {error, Bitmask{actualFlags}};
 }
 
-std::string_view EventFlags::name()
+std::string_view EventFlags::name() const
 {
     return tx_event_flags_group_name;
 }

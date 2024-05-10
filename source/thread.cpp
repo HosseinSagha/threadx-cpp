@@ -87,12 +87,12 @@ Error Thread::abortWait()
     return Error{tx_thread_wait_abort(this)};
 }
 
-Thread::ID Thread::id()
+Thread::ID Thread::id() const
 {
-    return ID(static_cast<Native::TX_THREAD *>(this));
+    return ID(static_cast<const Native::TX_THREAD *>(this));
 }
 
-std::string_view Thread::name()
+std::string_view Thread::name() const
 {
     return tx_thread_name;
 }
@@ -110,7 +110,7 @@ Thread::UintPair Thread::preemption(const auto newPreempt)
     return {error, oldPreempt};
 }
 
-Uint Thread::preemption()
+Uint Thread::preemption() const
 {
     return tx_thread_user_preempt_threshold;
 }
@@ -123,7 +123,7 @@ Thread::UintPair Thread::priority(const auto newPriority)
     return {error, oldPriority};
 }
 
-Uint Thread::priority()
+Uint Thread::priority() const
 {
     return tx_thread_user_priority;
 }
@@ -158,15 +158,14 @@ void Thread::join()
     m_exitSignalPtr = nullptr;
 }
 
-bool Thread::joinable()
+bool Thread::joinable() const
 {
     // wait on itself resource deadlock and wait on finished thread.
     auto threadState{state()};
-    return id() != ThisThread::id() and threadState != State::completed and
-           threadState != State::terminated;
+    return id() != ThisThread::id() and threadState != State::completed and threadState != State::terminated;
 }
 
-Thread::StackInfo Thread::stackInfo()
+Thread::StackInfo Thread::stackInfo() const
 {
     return StackInfo{.size = tx_thread_stack_size,
                      .used = uintptr_t(tx_thread_stack_end) - uintptr_t(tx_thread_stack_ptr) + 1,

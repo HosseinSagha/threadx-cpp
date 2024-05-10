@@ -18,7 +18,7 @@ class QueueBase : protected Native::TX_QUEUE
     /// delete all messages
     Error flush();
 
-    std::string_view name();
+    std::string_view name() const;
 
   protected:
     QueueBase(MemoryPoolBase &pool);

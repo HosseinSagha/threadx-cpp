@@ -81,10 +81,10 @@ template <Ulong Size> BytePool<Size>::BytePool()
 class BlockPoolBase : public MemoryPoolBase, protected Native::TX_BLOCK_POOL
 {
   public:
-    constexpr Ulong blockSize();
-
     BlockPoolBase(const BlockPoolBase &) = delete;
     BlockPoolBase &operator=(const BlockPoolBase &) = delete;
+
+    Ulong blockSize() const;
 
     Error release(void *memoryPtr) final;
 
@@ -100,11 +100,6 @@ class BlockPoolBase : public MemoryPoolBase, protected Native::TX_BLOCK_POOL
     ///
     ~BlockPoolBase();
 };
-
-constexpr Ulong BlockPoolBase::blockSize()
-{
-    return tx_block_pool_block_size;
-}
 
 template <typename Rep, typename Period>
 std::pair<Error, void *> BlockPoolBase::allocate(const std::chrono::duration<Rep, Period> &duration)

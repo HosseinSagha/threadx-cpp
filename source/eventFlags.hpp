@@ -59,7 +59,7 @@ class EventFlags : Native::TX_EVENT_FLAGS_GROUP
     auto waitAnyFor(const Bitmask &bitMask, const std::chrono::duration<Rep, Period> &duration,
                     const Option option = Option::clear);
 
-    std::string_view name();
+    std::string_view name() const;
 
   private:
     enum class FlagOption : Uint

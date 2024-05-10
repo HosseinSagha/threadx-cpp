@@ -47,7 +47,7 @@ class Mutex : Native::TX_MUTEX
     /// If the ownership count is zero, the mutex is made available.
     Error unlock();
 
-    std::string_view name();
+    std::string_view name() const;
 
     /// Places the highest priority thread suspended for ownership of the mutex at the front of the suspension list.
     /// All other threads remain in the same FIFO order they were suspended in.
