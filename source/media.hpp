@@ -68,6 +68,8 @@ class MediaBase : protected ThreadX::Native::FX_MEDIA
 
     Error close();
 
+    ThreadX::Native::FX_MEDIA *getAddress(); //just to be used with the internal ram driver
+
   protected:
     static constexpr size_t volumNameLength{12};
     static inline std::atomic_flag m_fileSystemInitialised = ATOMIC_FLAG_INIT;
@@ -101,12 +103,13 @@ auto MediaBase::fileSystemTime(const std::chrono::time_point<Clock, Duration> &t
 template <SectorSize N = defaultSectorSize> class Media : public MediaBase
 {
   public:
+    using DriverCallback = std::function<void(Media &)>;
     using NotifyCallback = std::function<void(Media &)>;
 
     constexpr SectorSize sectorSize() const;
     //Once initialized by this constructor, the application should call fx_system_date_set and fx_system_time_set to start with an accurate system date and time.
-    Media(void *driverInfoPtr = nullptr, const NotifyCallback &openNotifyCallback = {},
-          const NotifyCallback &closeNotifyCallback = {});
+    Media(const DriverCallback &driverCallback, void *driverInfoPtr = nullptr,
+          const NotifyCallback &openNotifyCallback = {}, const NotifyCallback &closeNotifyCallback = {});
 
     Media(const Media &) = delete;
     Media &operator=(const Media &) = delete;
@@ -123,7 +126,6 @@ template <SectorSize N = defaultSectorSize> class Media : public MediaBase
     static auto driverCallback(auto mediaPtr);
     static auto openNotifyCallback(auto mediaPtr);
     static auto closeNotifyCallback(auto mediaPtr);
-    virtual void driverCallbackImpl(Media &media) = 0;
 
 #ifdef FX_ENABLE_FAULT_TOLERANT
     static constexpr ThreadX::Uint faultTolerantCacheSize{FX_FAULT_TOLERANT_MAXIMUM_LOG_FILE_SIZE};
@@ -137,6 +139,7 @@ template <SectorSize N = defaultSectorSize> class Media : public MediaBase
     };
     std::array<ThreadX::Ulong, cacheSize()> m_faultTolerantCache{};
 #endif
+    const DriverCallback m_driverCallback;
     void *m_driverInfoPtr;
     const NotifyCallback m_openNotifyCallback;
     const NotifyCallback m_closeNotifyCallback;
@@ -149,9 +152,9 @@ template <SectorSize N> constexpr SectorSize Media<N>::sectorSize() const
 }
 
 template <SectorSize N>
-Media<N>::Media(
-    void *driverInfoPtr, const NotifyCallback &openNotifyCallback, const NotifyCallback &closeNotifyCallback)
-    : m_driverInfoPtr{driverInfoPtr}, m_openNotifyCallback{openNotifyCallback},
+Media<N>::Media(const DriverCallback &driverCallback, void *driverInfoPtr, const NotifyCallback &openNotifyCallback,
+                const NotifyCallback &closeNotifyCallback)
+    : m_driverCallback{driverCallback}, m_driverInfoPtr{driverInfoPtr}, m_openNotifyCallback{openNotifyCallback},
       m_closeNotifyCallback{closeNotifyCallback}
 {
     if (not m_fileSystemInitialised.test_and_set())
@@ -252,7 +255,7 @@ auto Media<N>::readSector(const ThreadX::Ulong sectorNo, std::span<std::byte, st
 template <SectorSize N> auto Media<N>::driverCallback(auto mediaPtr)
 {
     auto &media{static_cast<Media &>(*mediaPtr)};
-    media.driverCallbackImpl(media);
+    media.m_driverCallback(media);
 }
 
 template <SectorSize N> auto Media<N>::openNotifyCallback(auto mediaPtr)

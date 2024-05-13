@@ -112,4 +112,9 @@ Error MediaBase::close()
 {
     return Error{fx_media_close(this)};
 }
+
+ThreadX::Native::FX_MEDIA *MediaBase::getAddress()
+{
+    return this;
+}
 } // namespace FileX
