@@ -113,6 +113,11 @@ Error MediaBase::close()
     return Error{fx_media_close(this)};
 }
 
+std::string_view MediaBase::name() const
+{
+    return std::string_view(fx_media_name);
+}
+
 ThreadX::Native::FX_MEDIA *MediaBase::getAddress()
 {
     return this;

@@ -66,8 +66,9 @@ class TickTimer : Native::TX_TIMER
     /// \param type \sa Type
     /// \param activationType \sa ActivationType
     template <typename Rep, typename Period>
-    TickTimer(const std::chrono::duration<Rep, Period> &timeout, const ExpirationCallback &expirationCallback = {},
-              const Type type = Type::Continuous, const ActivationType activationType = ActivationType::autoActivate);
+    TickTimer(const std::string_view name, const std::chrono::duration<Rep, Period> &timeout,
+              const ExpirationCallback &expirationCallback = {}, const Type type = Type::Continuous,
+              const ActivationType activationType = ActivationType::autoActivate);
 
     /// Destructor. deletes the timer.
     ~TickTimer();
@@ -92,6 +93,8 @@ class TickTimer : Native::TX_TIMER
 
     size_t id() const;
 
+    std::string_view name() const;
+
   private:
     static void expirationCallback(const Ulong timerPtr);
 
@@ -115,14 +118,14 @@ constexpr auto TickTimer::ticks(const TimePoint &time)
 }
 
 template <typename Rep, typename Period>
-TickTimer::TickTimer(const std::chrono::duration<Rep, Period> &timeout, const ExpirationCallback &expirationCallback,
-                     const Type type, const ActivationType activationType)
+TickTimer::TickTimer(const std::string_view name, const std::chrono::duration<Rep, Period> &timeout,
+                     const ExpirationCallback &expirationCallback, const Type type, const ActivationType activationType)
     : Native::TX_TIMER{}, m_timeout{std::chrono::duration_cast<TickTimer::Duration>(timeout)},
       m_expirationCallback{expirationCallback}, m_id{expirationCallback ? m_idCounter.fetch_add(1) : 0}, m_type{type}
 {
     using namespace Native;
     [[maybe_unused]] Error error{tx_timer_create(
-        this, const_cast<char *>("tick timer"), m_expirationCallback ? TickTimer::expirationCallback : nullptr,
+        this, const_cast<char *>(name.data()), m_expirationCallback ? TickTimer::expirationCallback : nullptr,
         reinterpret_cast<Ulong>(this), ticks(std::chrono::duration_cast<TickTimer::Duration>(timeout)),
         type == Type::SingleShot ? 0 : ticks(std::chrono::duration_cast<TickTimer::Duration>(timeout)),
         std::to_underlying(activationType))};

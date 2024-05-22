@@ -67,6 +67,7 @@ class MediaBase : protected ThreadX::Native::FX_MEDIA
     Error flush();
 
     Error close();
+    std::string_view name() const;
 
     ThreadX::Native::FX_MEDIA *getAddress(); //just to be used with the internal ram driver
 
@@ -114,9 +115,9 @@ template <SectorSize N = defaultSectorSize> class Media : public MediaBase
     Media(const Media &) = delete;
     Media &operator=(const Media &) = delete;
 
-    auto open(const FaultTolerantMode mode = FaultTolerantMode::enable);
-    auto format(const ThreadX::Ulong storageSize, const ThreadX::Uint sectorPerCluster = 1,
-                const ThreadX::Uint directoryEntries = 32);
+    auto open(const std::string_view name, const FaultTolerantMode mode = FaultTolerantMode::enable);
+    auto format(const std::string_view volumeName, const ThreadX::Ulong storageSize,
+                const ThreadX::Uint sectorPerCluster = 1, const ThreadX::Uint directoryEntries = 32);
     auto writeSector(const ThreadX::Ulong sectorNo, const std::span<std::byte, std::to_underlying(N)> sectorData);
     auto readSector(const ThreadX::Ulong sectorNo, std::span<std::byte, std::to_underlying(N)> sectorData);
 
@@ -175,11 +176,11 @@ Media<N>::Media(const DriverCallback &driverCallback, void *driverInfoPtr, const
     }
 }
 
-template <SectorSize N> auto Media<N>::open(const FaultTolerantMode mode)
+template <SectorSize N> auto Media<N>::open(const std::string_view name, const FaultTolerantMode mode)
 {
     using namespace ThreadX::Native;
 
-    if (Error error{fx_media_open(this, const_cast<char *>("disc"), Media::driverCallback, m_driverInfoPtr,
+    if (Error error{fx_media_open(this, const_cast<char *>(name.data()), Media::driverCallback, m_driverInfoPtr,
                                   m_mediaMemory.data(), m_mediaMemory.size())};
         error != Error::success)
     {
@@ -199,8 +200,8 @@ template <SectorSize N> auto Media<N>::open(const FaultTolerantMode mode)
 }
 
 template <SectorSize N>
-auto Media<N>::format(const ThreadX::Ulong storageSize, const ThreadX::Uint sectorPerCluster,
-                      const ThreadX::Uint directoryEntriesFat12_16)
+auto Media<N>::format(const std::string_view volumeName, const ThreadX::Ulong storageSize,
+                      const ThreadX::Uint sectorPerCluster, const ThreadX::Uint directoryEntriesFat12_16)
 {
     assert(storageSize % std::to_underlying(N) == 0);
 
@@ -208,34 +209,34 @@ auto Media<N>::format(const ThreadX::Ulong storageSize, const ThreadX::Uint sect
 #ifdef FX_ENABLE_EXFAT
         fx_media_exFAT_format(
             this,
-            Media::driverCallback,               // Driver entry
-            m_driverInfoPtr,                     // could be RAM disk memory pointer
-            m_mediaMemory.data(),                // Media buffer pointer
-            m_mediaMemory.size(),                // Media buffer size
-            const_cast<char *>("disk"),          // Volume Name
-            1,                                   // Number of FATs
-            0,                                   // Hidden sectors
-            storageSize / std::to_underlying(N), // Total sectors
-            std::to_underlying(N),               // Sector size
-            sectorPerCluster,                    // exFAT Sectors per cluster
-            12345,                               // Volume ID
-            1)                                   // Boundary unit
+            Media::driverCallback,                 // Driver entry
+            m_driverInfoPtr,                       // could be RAM disk memory pointer
+            m_mediaMemory.data(),                  // Media buffer pointer
+            m_mediaMemory.size(),                  // Media buffer size
+            const_cast<char *>(volumeName.data()), // Volume Name
+            1,                                     // Number of FATs
+            0,                                     // Hidden sectors
+            storageSize / std::to_underlying(N),   // Total sectors
+            std::to_underlying(N),                 // Sector size
+            sectorPerCluster,                      // exFAT Sectors per cluster
+            12345,                                 // Volume ID
+            1)                                     // Boundary unit
 #else
         fx_media_format(
             this,
-            Media::driverCallback,               // Driver entry
-            m_driverInfoPtr,                     // could be RAM disk memory pointer
-            m_mediaMemory.data(),                // Media buffer pointer
-            m_mediaMemory.size(),                // Media buffer size
-            const_cast<char *>("disk"),          // Volume Name
-            1,                                   // Number of FATs
-            directoryEntriesFat12_16,            // Directory Entries
-            0,                                   // Hidden sectors
-            storageSize / std::to_underlying(N), // Total sectors
-            std::to_underlying(N),               // Sector size
-            sectorPerCluster,                    // Sectors per cluster
-            1,                                   // Heads
-            1)                                   // Sectors per track
+            Media::driverCallback,                 // Driver entry
+            m_driverInfoPtr,                       // could be RAM disk memory pointer
+            m_mediaMemory.data(),                  // Media buffer pointer
+            m_mediaMemory.size(),                  // Media buffer size
+            const_cast<char *>(volumeName.data()), // Volume Name
+            1,                                     // Number of FATs
+            directoryEntriesFat12_16,              // Directory Entries
+            0,                                     // Hidden sectors
+            storageSize / std::to_underlying(N),   // Total sectors
+            std::to_underlying(N),                 // Sector size
+            sectorPerCluster,                      // Sectors per cluster
+            1,                                     // Heads
+            1)                                     // Sectors per track
 #endif
     };
 }

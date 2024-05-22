@@ -21,6 +21,11 @@ Error BytePoolBase::prioritise()
     return Error{tx_byte_pool_prioritize(this)};
 }
 
+std::string_view BytePoolBase::name() const
+{
+    return std::string_view(tx_byte_pool_name);
+}
+
 BlockPoolBase::BlockPoolBase()
 {
 }
@@ -43,5 +48,10 @@ Error BlockPoolBase::release(void *memoryPtr)
 Error BlockPoolBase::prioritise()
 {
     return Error{tx_block_pool_prioritize(this)};
+}
+
+std::string_view BlockPoolBase::name() const
+{
+    return std::string_view(tx_block_pool_name);
 }
 } // namespace ThreadX

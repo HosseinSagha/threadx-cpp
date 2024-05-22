@@ -84,6 +84,11 @@ size_t TickTimer::id() const
     return m_id;
 }
 
+std::string_view TickTimer::name() const
+{
+    return std::string_view(tx_timer_name);
+}
+
 void TickTimer::expirationCallback(const Ulong timerPtr)
 {
     auto &timer{*reinterpret_cast<TickTimer *>(timerPtr)};

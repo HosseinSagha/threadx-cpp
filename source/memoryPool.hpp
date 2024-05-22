@@ -32,6 +32,7 @@ class BytePoolBase : public MemoryPoolBase, protected Native::TX_BYTE_POOL
     /// Places the highest priority thread suspended for memory on this pool at the front of the suspension list.
     /// All other threads remain in the same FIFO order they were suspended in.
     Error prioritise();
+    std::string_view name() const;
 
   protected:
     BytePoolBase();
@@ -68,13 +69,13 @@ template <Ulong Size> class BytePool : public BytePoolBase, std::array<Ulong, Si
 
   public:
     ///
-    BytePool();
+    BytePool(const std::string_view name);
 };
 
-template <Ulong Size> BytePool<Size>::BytePool()
+template <Ulong Size> BytePool<Size>::BytePool(const std::string_view name)
 {
     using namespace Native;
-    [[maybe_unused]] Error error{tx_byte_pool_create(this, const_cast<char *>("byte pool"), this->data(), Size)};
+    [[maybe_unused]] Error error{tx_byte_pool_create(this, const_cast<char *>(name.data()), this->data(), Size)};
     assert(error == Error::success);
 }
 
@@ -94,6 +95,7 @@ class BlockPoolBase : public MemoryPoolBase, protected Native::TX_BLOCK_POOL
     /// Places the highest priority thread suspended for memory on this pool at the front of the suspension list.
     /// All other threads remain in the same FIFO order they were suspended in.
     Error prioritise();
+    std::string_view name() const;
 
   protected:
     BlockPoolBase();
@@ -119,14 +121,14 @@ class BlockPool : public BlockPoolBase, std::array<Ulong, Size / sizeOfUlong> //
   public:
     /// block memory pool from which to allocate the thread stacks and queues.
     /// total blocks = (total bytes) / (block size + sizeof(void *))
-    BlockPool();
+    BlockPool(const std::string_view name);
 };
 
-template <Ulong Size, Ulong BlockSize> BlockPool<Size, BlockSize>::BlockPool()
+template <Ulong Size, Ulong BlockSize> BlockPool<Size, BlockSize>::BlockPool(const std::string_view name)
 {
     using namespace Native;
     [[maybe_unused]] Error error{
-        tx_block_pool_create(this, const_cast<char *>("block pool"), BlockSize, this->data(), Size)};
+        tx_block_pool_create(this, const_cast<char *>(name.data()), BlockSize, this->data(), Size)};
     assert(error == Error::success);
 }
 } // namespace ThreadX
