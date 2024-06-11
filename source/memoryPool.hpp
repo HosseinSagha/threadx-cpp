@@ -6,16 +6,7 @@
 
 namespace ThreadX
 {
-class MemoryPoolBase
-{
-  public:
-    virtual Error release(void *memoryPtr) = 0;
-
-  protected:
-    virtual ~MemoryPoolBase() = default;
-};
-
-class BytePoolBase : public MemoryPoolBase, protected Native::TX_BYTE_POOL
+class BytePoolBase : protected Native::TX_BYTE_POOL
 {
   public:
     BytePoolBase(const BytePoolBase &) = delete;
@@ -23,7 +14,7 @@ class BytePoolBase : public MemoryPoolBase, protected Native::TX_BYTE_POOL
 
     static constexpr auto minimumPoolSize(std::span<const Ulong> memorySizes);
 
-    Error release(void *memoryPtr) final;
+    Error release(void *memoryPtr);
 
     template <typename Rep = TickTimer::rep, typename Period = TickTimer::period>
     std::pair<Error, void *> allocate(
@@ -79,7 +70,7 @@ template <Ulong Size> BytePool<Size>::BytePool(const std::string_view name)
     assert(error == Error::success);
 }
 
-class BlockPoolBase : public MemoryPoolBase, protected Native::TX_BLOCK_POOL
+class BlockPoolBase : protected Native::TX_BLOCK_POOL
 {
   public:
     BlockPoolBase(const BlockPoolBase &) = delete;
@@ -87,7 +78,7 @@ class BlockPoolBase : public MemoryPoolBase, protected Native::TX_BLOCK_POOL
 
     Ulong blockSize() const;
 
-    Error release(void *memoryPtr) final;
+    Error release(void *memoryPtr);
 
     template <typename Rep = TickTimer::rep, typename Period = TickTimer::period>
     std::pair<Error, void *> allocate(const std::chrono::duration<Rep, Period> &duration = TickTimer::noWait);

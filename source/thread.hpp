@@ -10,7 +10,7 @@
 namespace ThreadX
 {
 /// pure vitual class to inherit application threads from
-class Thread : Native::TX_THREAD
+class ThreadBase : protected Native::TX_THREAD
 {
   public:
     ///
@@ -46,8 +46,8 @@ class Thread : Native::TX_THREAD
         exit
     };
 
-    using NotifyCallback = std::function<void(Thread &, const NotifyCondition)>;
-    using ErrorCallback = std::function<void(Thread &)>;
+    using NotifyCallback = std::function<void(ThreadBase &, const NotifyCondition)>;
+    using ErrorCallback = std::function<void(ThreadBase &)>;
     using UintPair = std::pair<Error, Uint>;
     using UlongPair = std::pair<Error, Ulong>;
     using ID = uintptr_t;
@@ -64,29 +64,13 @@ class Thread : Native::TX_THREAD
     static constexpr Ulong noTimeSlice{}; ///
     static constexpr Ulong minimumStackSize{TX_MINIMUM_STACK};
 
-    /// Constructor
-    /// \param pool
-    /// \param stackSize
-    /// \param priority
-    /// \param preamptionThresh
-    /// \param timeSlice
-    /// \param startType
-    Thread(const std::string_view name, BytePoolBase &pool, const Ulong stackSize = minimumStackSize,
-           const NotifyCallback &entryExitNotifyCallback = {}, const Uint priority = defaultPriority,
-           const Uint preamptionThresh = defaultPriority, const Ulong timeSlice = noTimeSlice,
-           const StartType startType = StartType::autoStart);
-
-    Thread(const std::string_view name, BlockPoolBase &pool, const NotifyCallback &entryExitNotifyCallback = {},
-           const Uint priority = defaultPriority, const Uint preamptionThresh = defaultPriority,
-           const Ulong timeSlice = noTimeSlice, const StartType startType = StartType::autoStart);
-
-    Thread(const Thread &) = delete;
-    Thread &operator=(const Thread &) = delete;
-
     ///
     /// \param stackErrorNotifyCallback
     /// \return
     static Error registerStackErrorNotifyCallback(const ErrorCallback &stackErrorNotifyCallback);
+
+    ThreadBase(const ThreadBase &) = delete;
+    ThreadBase &operator=(const ThreadBase &) = delete;
 
     /// resumes or prepares for execution a thread that was previously suspended by a suspend() call.
     /// In addition, this service resumes threads that were created without an automatic start.
@@ -141,19 +125,84 @@ class Thread : Native::TX_THREAD
     StackInfo stackInfo() const;
 
   protected:
-    virtual ~Thread();
+    ThreadBase(const NotifyCallback &entryExitNotifyCallback);
+    ~ThreadBase();
+    void create(const std::string_view name, void *stackPtr, Ulong stackSize, const Uint priority,
+                const Uint preamptionThresh, const Ulong timeSlice, const StartType startType);
 
   private:
-    static void entryFunction(auto thisPtr);
-    static void entryExitNotifyCallback(auto *const threadPtr, const auto condition);
     static void stackErrorNotifyCallback(Native::TX_THREAD *const threadPtr);
+    static void entryExitNotifyCallback(auto *const threadPtr, const auto condition);
+    static void entryFunction(auto thisPtr);
     virtual void entryCallback() = 0; // pure virtual class
 
     static inline ErrorCallback m_stackErrorNotifyCallback;
-    MemoryPoolBase &m_pool;
     const NotifyCallback m_entryExitNotifyCallback;
     BinarySemaphore *m_exitSignalPtr{};
 };
+
+template <class Pool> class Thread : public ThreadBase
+{
+  public:
+    /// Constructor
+    /// \param pool
+    /// \param stackSize
+    /// \param priority
+    /// \param preamptionThresh
+    /// \param timeSlice
+    /// \param startType
+    Thread(const std::string_view name, Pool &pool, const Ulong stackSize = minimumStackSize,
+           const NotifyCallback &entryExitNotifyCallback = {}, const Uint priority = defaultPriority,
+           const Uint preamptionThresh = defaultPriority, const Ulong timeSlice = noTimeSlice,
+           const StartType startType = StartType::autoStart)
+        requires(std::is_base_of_v<BytePoolBase, Pool>);
+
+    Thread(const std::string_view name, Pool &pool, const NotifyCallback &entryExitNotifyCallback = {},
+           const Uint priority = defaultPriority, const Uint preamptionThresh = defaultPriority,
+           const Ulong timeSlice = noTimeSlice, const StartType startType = StartType::autoStart)
+        requires(std::is_base_of_v<BlockPoolBase, Pool>);
+
+    virtual ~Thread();
+
+  private:
+    using ThreadBase::create;
+    
+    virtual void entryCallback() override = 0;
+
+    Pool &m_pool;
+};
+
+template <class Pool>
+Thread<Pool>::Thread(
+    const std::string_view name, Pool &pool, const Ulong stackSize, const NotifyCallback &entryExitNotifyCallback,
+    const Uint priority, const Uint preamptionThresh, const Ulong timeSlice, const StartType startType)
+    requires(std::is_base_of_v<BytePoolBase, Pool>)
+    : ThreadBase{entryExitNotifyCallback}, m_pool{pool}
+{
+    auto [error, stackPtr] = pool.allocate(stackSize);
+    assert(error == Error::success);
+
+    create(name, stackPtr, stackSize, priority, preamptionThresh, timeSlice, startType);
+}
+
+template <class Pool>
+Thread<Pool>::Thread(const std::string_view name, Pool &pool, const NotifyCallback &entryExitNotifyCallback,
+                     const Uint priority, const Uint preamptionThresh, const Ulong timeSlice, const StartType startType)
+    requires(std::is_base_of_v<BlockPoolBase, Pool>)
+    : ThreadBase{entryExitNotifyCallback}, m_pool{pool}
+{
+    auto [error, stackPtr] = pool.allocate();
+    assert(error == Error::success);
+
+    create(name, stackPtr, pool.blockSize(), priority, preamptionThresh, timeSlice, startType);
+}
+
+template <class Pool> Thread<Pool>::~Thread()
+{
+    terminate();
+    tx_thread_delete(this);
+    m_pool.release(tx_thread_stack_start);
+}
 } // namespace ThreadX
 
 namespace ThreadX::ThisThread

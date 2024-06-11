@@ -26,7 +26,7 @@ std::string_view BytePoolBase::name() const
     return std::string_view(tx_byte_pool_name);
 }
 
-BlockPoolBase::BlockPoolBase()
+BlockPoolBase::BlockPoolBase() : Native::TX_BLOCK_POOL{}
 {
 }
 

@@ -4,51 +4,17 @@
 
 namespace ThreadX
 {
-Thread::Thread(const std::string_view name, BytePoolBase &pool, const Ulong stackSize,
-               const NotifyCallback &entryExitNotifyCallback, const Uint priority, const Uint preamptionThresh,
-               const Ulong timeSlice, const StartType startType)
-    : Native::TX_THREAD{}, m_pool{pool}, m_entryExitNotifyCallback{entryExitNotifyCallback}
+ThreadBase::ThreadBase(const NotifyCallback &entryExitNotifyCallback)
+    : Native::TX_THREAD{}, m_entryExitNotifyCallback{entryExitNotifyCallback}
 {
-    auto [error, stackPtr] = pool.allocate(stackSize);
-    assert(error == Error::success);
-
-    using namespace Native;
-    error = Error{tx_thread_create(
-        this, const_cast<char *>(name.data()), entryFunction, reinterpret_cast<Ulong>(this), stackPtr, stackSize,
-        priority, preamptionThresh, timeSlice, std::to_underlying(startType))};
-    assert(error == Error::success);
-
-    error = Error{tx_thread_entry_exit_notify(this, Thread::entryExitNotifyCallback)};
-    assert(error == Error::success);
 }
 
-Thread::Thread(const std::string_view name, BlockPoolBase &pool, const NotifyCallback &entryExitNotifyCallback,
-               const Uint priority, const Uint preamptionThresh, const Ulong timeSlice, const StartType startType)
-    : Native::TX_THREAD{}, m_pool{pool}, m_entryExitNotifyCallback{entryExitNotifyCallback}
+ThreadBase::~ThreadBase() = default;
+
+Error ThreadBase::registerStackErrorNotifyCallback(const ErrorCallback &stackErrorNotifyCallback)
 {
-    auto [error, stackPtr] = pool.allocate();
-    assert(error == Error::success);
-
-    using namespace Native;
-    error = Error{tx_thread_create(
-        this, const_cast<char *>(name.data()), entryFunction, reinterpret_cast<Ulong>(this), stackPtr, pool.blockSize(),
-        priority, preamptionThresh, timeSlice, std::to_underlying(startType))};
-    assert(error == Error::success);
-
-    error = Error{tx_thread_entry_exit_notify(this, Thread::entryExitNotifyCallback)};
-    assert(error == Error::success);
-}
-
-Thread::~Thread()
-{
-    terminate();
-    tx_thread_delete(this);
-    m_pool.release(tx_thread_stack_start);
-}
-
-Error Thread::registerStackErrorNotifyCallback(const ErrorCallback &stackErrorNotifyCallback)
-{
-    Error error{tx_thread_stack_error_notify(stackErrorNotifyCallback ? Thread::stackErrorNotifyCallback : nullptr)};
+    Error error{
+        tx_thread_stack_error_notify(stackErrorNotifyCallback ? ThreadBase::stackErrorNotifyCallback : nullptr)};
     if (error == Error::success)
     {
         m_stackErrorNotifyCallback = stackErrorNotifyCallback;
@@ -57,17 +23,30 @@ Error Thread::registerStackErrorNotifyCallback(const ErrorCallback &stackErrorNo
     return error;
 }
 
-Error Thread::resume()
+void ThreadBase::create(const std::string_view name, void *stackPtr, Ulong stackSize, const Uint priority,
+                        const Uint preamptionThresh, const Ulong timeSlice, const StartType startType)
+{
+    using namespace Native;
+    [[maybe_unused]] Error error{tx_thread_create(
+        this, const_cast<char *>(name.data()), entryFunction, reinterpret_cast<Ulong>(this), stackPtr, stackSize,
+        priority, preamptionThresh, timeSlice, std::to_underlying(startType))};
+    assert(error == Error::success);
+
+    error = Error{tx_thread_entry_exit_notify(this, ThreadBase::entryExitNotifyCallback)};
+    assert(error == Error::success);
+}
+
+Error ThreadBase::resume()
 {
     return Error{tx_thread_resume(this)};
 }
 
-Error Thread::suspend()
+Error ThreadBase::suspend()
 {
     return Error{tx_thread_suspend(this)};
 }
 
-Error Thread::restart()
+Error ThreadBase::restart()
 {
     if (auto error = Error{tx_thread_reset(this)}; error != Error::success)
     {
@@ -77,32 +56,32 @@ Error Thread::restart()
     return Error{tx_thread_resume(this)};
 }
 
-Error Thread::terminate()
+Error ThreadBase::terminate()
 {
     return Error{tx_thread_terminate(this)};
 }
 
-Error Thread::abortWait()
+Error ThreadBase::abortWait()
 {
     return Error{tx_thread_wait_abort(this)};
 }
 
-Thread::ID Thread::id() const
+ThreadBase::ID ThreadBase::id() const
 {
     return ID(static_cast<const Native::TX_THREAD *>(this));
 }
 
-std::string_view Thread::name() const
+std::string_view ThreadBase::name() const
 {
     return tx_thread_name;
 }
 
-Thread::State Thread::state() const
+ThreadBase::State ThreadBase::state() const
 {
     return State{tx_thread_state};
 }
 
-Thread::UintPair Thread::preemption(const auto newPreempt)
+ThreadBase::UintPair ThreadBase::preemption(const auto newPreempt)
 {
     Uint oldPreempt{};
     Error error{tx_thread_preemption_change(this, newPreempt, std::addressof(oldPreempt))};
@@ -110,12 +89,12 @@ Thread::UintPair Thread::preemption(const auto newPreempt)
     return {error, oldPreempt};
 }
 
-Uint Thread::preemption() const
+Uint ThreadBase::preemption() const
 {
     return tx_thread_user_preempt_threshold;
 }
 
-Thread::UintPair Thread::priority(const auto newPriority)
+ThreadBase::UintPair ThreadBase::priority(const auto newPriority)
 {
     Uint oldPriority;
     Error error{tx_thread_priority_change(this, newPriority, std::addressof(oldPriority))};
@@ -123,12 +102,12 @@ Thread::UintPair Thread::priority(const auto newPriority)
     return {error, oldPriority};
 }
 
-Uint Thread::priority() const
+Uint ThreadBase::priority() const
 {
     return tx_thread_user_priority;
 }
 
-Thread::UlongPair Thread::timeSlice(const auto newTimeSlice)
+ThreadBase::UlongPair ThreadBase::timeSlice(const auto newTimeSlice)
 {
     Ulong oldTimeSlice;
     Error error{tx_thread_time_slice_change(this, newTimeSlice, std::addressof(oldTimeSlice))};
@@ -136,21 +115,21 @@ Thread::UlongPair Thread::timeSlice(const auto newTimeSlice)
     return {error, oldTimeSlice};
 }
 
-void Thread::join()
+void ThreadBase::join()
 {
     assert(not m_exitSignalPtr);
-    Kernel::CriticalSection::lock(); //do not allow any change in thread state until m_exitSignalPtr is assigned.
+    BinarySemaphore exitSignal("join");
 
-    if (not joinable()) // Thread becomes unjoinable just before entryExitNotifyCallback() is called.
     {
-        Kernel::CriticalSection::unlock();
-        return;
+        Kernel::CriticalSection cs; //do not allow any change in thread state until m_exitSignalPtr is assigned.
+
+        if (not joinable()) // Thread becomes unjoinable just before entryExitNotifyCallback() is called.
+        {
+            return;
+        }
+
+        m_exitSignalPtr = std::addressof(exitSignal);
     }
-
-    BinarySemaphore exitSignal("Join");
-    m_exitSignalPtr = std::addressof(exitSignal);
-
-    Kernel::CriticalSection::unlock();
 
     [[maybe_unused]] auto error{exitSignal.acquire()}; // wait for release by exit notify callback
     assert(error == Error::success or error == Error::waitAborted);
@@ -158,14 +137,14 @@ void Thread::join()
     m_exitSignalPtr = nullptr;
 }
 
-bool Thread::joinable() const
+bool ThreadBase::joinable() const
 {
     // wait on itself resource deadlock and wait on finished thread.
     auto threadState{state()};
     return id() != ThisThread::id() and threadState != State::completed and threadState != State::terminated;
 }
 
-Thread::StackInfo Thread::stackInfo() const
+ThreadBase::StackInfo ThreadBase::stackInfo() const
 {
     return StackInfo{.size = tx_thread_stack_size,
                      .used = uintptr_t(tx_thread_stack_end) - uintptr_t(tx_thread_stack_ptr) + 1,
@@ -174,14 +153,15 @@ Thread::StackInfo Thread::stackInfo() const
                                        100 / tx_thread_stack_size}; // As a rule of thumb, keep this below 70%
 }
 
-void Thread::entryFunction(auto thisPtr)
+void ThreadBase::stackErrorNotifyCallback(Native::TX_THREAD *const threadPtr)
 {
-    reinterpret_cast<Thread *>(thisPtr)->entryCallback();
+    auto &thread{static_cast<ThreadBase &>(*threadPtr)};
+    thread.m_stackErrorNotifyCallback(thread);
 }
 
-void Thread::entryExitNotifyCallback(auto *const threadPtr, const auto condition)
+void ThreadBase::entryExitNotifyCallback(auto *const threadPtr, const auto condition)
 {
-    auto &thread{static_cast<Thread &>(*threadPtr)};
+    auto &thread{static_cast<ThreadBase &>(*threadPtr)};
     auto notifyCondition{NotifyCondition{condition}};
 
     if (thread.m_entryExitNotifyCallback)
@@ -199,18 +179,17 @@ void Thread::entryExitNotifyCallback(auto *const threadPtr, const auto condition
     }
 }
 
-void Thread::stackErrorNotifyCallback(Native::TX_THREAD *const threadPtr)
+void ThreadBase::entryFunction(auto thisPtr)
 {
-    auto &thread{static_cast<Thread &>(*threadPtr)};
-    thread.m_stackErrorNotifyCallback(thread);
+    reinterpret_cast<ThreadBase *>(thisPtr)->entryCallback();
 }
 } // namespace ThreadX
 
 namespace ThreadX::ThisThread
 {
-Thread::ID id()
+ThreadBase::ID id()
 {
-    return Thread::ID(Native::tx_thread_identify());
+    return ThreadBase::ID(Native::tx_thread_identify());
 }
 
 void yield()

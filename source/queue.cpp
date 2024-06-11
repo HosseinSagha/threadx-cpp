@@ -2,27 +2,21 @@
 
 namespace ThreadX
 {
-QueueBase::QueueBase(MemoryPoolBase &pool) : Native::TX_QUEUE{}, m_pool{pool}
+QueueBaseBase::QueueBaseBase() : Native::TX_QUEUE{}
 {
 }
 
-QueueBase::~QueueBase()
-{
-    tx_queue_delete(this);
-    m_pool.release(tx_queue_start);
-}
-
-Error QueueBase::prioritise()
+Error QueueBaseBase::prioritise()
 {
     return Error{tx_queue_prioritize(this)};
 }
 
-Error QueueBase::flush()
+Error QueueBaseBase::flush()
 {
     return Error{tx_queue_flush(this)};
 }
 
-std::string_view QueueBase::name() const
+std::string_view QueueBaseBase::name() const
 {
     return tx_queue_name;
 }
