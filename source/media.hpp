@@ -76,7 +76,7 @@ class MediaBase : protected ThreadX::Native::FX_MEDIA
     static inline std::atomic_flag m_fileSystemInitialised = ATOMIC_FLAG_INIT;
 
     MediaBase();
-    virtual ~MediaBase();
+    ~MediaBase();
 };
 
 template <class Clock, typename Duration>
