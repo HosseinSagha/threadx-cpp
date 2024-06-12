@@ -69,8 +69,6 @@ class MediaBase : protected ThreadX::Native::FX_MEDIA
     Error close();
     std::string_view name() const;
 
-    ThreadX::Native::FX_MEDIA *getAddress(); //just to be used with the internal ram driver
-
   protected:
     static constexpr size_t volumNameLength{12};
     static inline std::atomic_flag m_fileSystemInitialised = ATOMIC_FLAG_INIT;
@@ -104,7 +102,7 @@ auto MediaBase::fileSystemTime(const std::chrono::time_point<Clock, Duration> &t
 template <SectorSize N = defaultSectorSize> class Media : public MediaBase
 {
   public:
-    using DriverCallback = std::function<void(Media &)>;
+    using DriverCallback = std::function<void(ThreadX::Native::FX_MEDIA *mediaPtr)>;
     using NotifyCallback = std::function<void(Media &)>;
 
     constexpr SectorSize sectorSize() const;
@@ -256,7 +254,7 @@ auto Media<N>::readSector(const ThreadX::Ulong sectorNo, std::span<std::byte, st
 template <SectorSize N> auto Media<N>::driverCallback(auto mediaPtr)
 {
     auto &media{static_cast<Media &>(*mediaPtr)};
-    media.m_driverCallback(media);
+    media.m_driverCallback(mediaPtr);
 }
 
 template <SectorSize N> auto Media<N>::openNotifyCallback(auto mediaPtr)
