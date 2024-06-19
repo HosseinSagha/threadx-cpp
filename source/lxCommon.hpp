@@ -4,6 +4,8 @@
 
 namespace ThreadX::Native
 {
+#define LX_NAND_ENABLE_CONTROL_BLOCK_FOR_DRIVER_INTERFACE
+#define LX_NOR_ENABLE_CONTROL_BLOCK_FOR_DRIVER_INTERFACE
 #include "lx_api.h"
 } // namespace ThreadX::Native
 

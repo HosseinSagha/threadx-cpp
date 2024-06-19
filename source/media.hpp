@@ -57,7 +57,7 @@ class MediaBase : protected ThreadX::Native::FX_MEDIA
 
     Ulong64Pair space();
 
-    ///  This service is typically called when I/O errors are detected
+    /// This service is typically called when I/O errors are detected
     Error abort();
 
     Error invalidateCache();

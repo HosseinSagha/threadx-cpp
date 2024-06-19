@@ -14,6 +14,7 @@ namespace ThreadX
 using Ulong = Native::ULONG;     //uint32_t
 using Ulong64 = Native::ULONG64; //uint64_t
 using Uint = Native::UINT;       //size_t
+using Uchar = Native::UCHAR; 
 
 constexpr auto sizeOfUlong{sizeof(Ulong)};
 static_assert(sizeOfUlong >= sizeof(uintptr_t));
