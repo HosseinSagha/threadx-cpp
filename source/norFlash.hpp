@@ -1,4 +1,7 @@
+#pragma once
+
 #include "lxCommon.hpp"
+#include "media.hpp"
 #include <array>
 #include <atomic>
 #include <functional>
@@ -18,21 +21,20 @@ class NorFlashBase : protected ThreadX::Native::LX_NOR_FLASH
                                     ThreadX::Ulong *source, ThreadX::Ulong words)>
             writeCallback;
         std::function<ThreadX::Uint(ThreadX::Native::LX_NOR_FLASH *, ThreadX::Ulong block, ThreadX::Ulong eraseCount)>
-            blockEraseCallback;
-        std::function<ThreadX::Uint(ThreadX::Native::LX_NOR_FLASH *, ThreadX::Ulong block)> blockErasedVerifyCallback;
+            eraseBlockCallback;
+        std::function<ThreadX::Uint(ThreadX::Native::LX_NOR_FLASH *, ThreadX::Ulong block)> verifyErasedBlockCallback;
         std::function<void(ThreadX::Native::LX_NOR_FLASH *, ThreadX::Uint errorCode)> systemErrorCallback;
     };
 
-    static constexpr ThreadX::Ulong m_sectorSizeInWord =
-        512 / ThreadX::wordSize; // LX_NOR_SECTOR_SIZE * wordSize;
-    constexpr ThreadX::Ulong sectorSize();
+    static constexpr ThreadX::Uint m_sectorSizeInWord = 512 / ThreadX::wordSize; // LX_NOR_SECTOR_SIZE;
+    static constexpr FileX::SectorSize sectorSize();
 
     NorFlashBase(const Driver &driver);
     ~NorFlashBase();
 
+    ThreadX::Ulong formatSize() const;
     Error open();
     Error close();
-    //Error eraseAll();
     Error defragment(const ThreadX::Uint numberOfBlocks = 0);
     Error readSector(const ThreadX::Ulong sectorNumber, std::span<ThreadX::Ulong, m_sectorSizeInWord> sectorData);
     Error releaseSector(const ThreadX::Ulong sectorNumber);
@@ -62,6 +64,11 @@ class NorFlashBase : protected ThreadX::Native::LX_NOR_FLASH
     std::array<ThreadX::Ulong, m_sectorSizeInWord / ThreadX::wordSize> m_sectorBuffer{};
 };
 
+constexpr FileX::SectorSize NorFlashBase::sectorSize()
+{
+    return FileX::SectorSize{m_sectorSizeInWord * ThreadX::wordSize};
+}
+
 template <ThreadX::Ulong CacheSize = 0> class NorFlash : public NorFlashBase
 {
   public:
@@ -81,6 +88,7 @@ NorFlash<CacheSize>::NorFlash(const ThreadX::Ulong storageSize, const ThreadX::U
     : NorFlashBase{driver}
 {
     static_assert(CacheSize % (m_sectorSizeInWord * ThreadX::wordSize) == 0);
+
     init(m_extendedCacheMemory, storageSize, blockSize, baseAddress);
 }
 } // namespace LevelX

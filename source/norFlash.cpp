@@ -3,7 +3,6 @@
 
 namespace LevelX
 {
-
 NorFlashBase::NorFlashBase(const Driver &driver) : ThreadX::Native::LX_NOR_FLASH{}, m_driver{driver}
 {
 }
@@ -16,6 +15,9 @@ NorFlashBase::~NorFlashBase()
 void NorFlashBase::init(std::span<ThreadX::Ulong> extendedCacheMemory, const ThreadX::Ulong storageSize,
                         const ThreadX::Ulong blockSize, const ThreadX::Ulong baseAddress)
 {
+    assert(storageSize % blockSize == 0);
+    assert(blockSize % (m_sectorSizeInWord * ThreadX::wordSize) == 0);
+
     if (not m_initialised.test_and_set())
     {
         ThreadX::Native::lx_nor_flash_initialize();
@@ -38,6 +40,11 @@ void NorFlashBase::init(std::span<ThreadX::Ulong> extendedCacheMemory, const Thr
     lx_nor_flash_total_blocks = storageSize / blockSize;
     lx_nor_flash_words_per_block = blockSize / ThreadX::wordSize;
     lx_nor_flash_sector_buffer = m_sectorBuffer.data();
+}
+
+ThreadX::Ulong NorFlashBase::formatSize() const
+{
+    return (lx_nor_flash_total_blocks - 1) * (lx_nor_flash_words_per_block * ThreadX::wordSize);
 }
 
 Error NorFlashBase::open()
@@ -79,11 +86,6 @@ Error NorFlashBase::writeSector(
     return Error{lx_nor_flash_sector_write(this, sectorNumber, sectorData.data())};
 }
 
-constexpr ThreadX::Ulong NorFlashBase::sectorSize()
-{
-    return m_sectorSizeInWord * ThreadX::wordSize;
-}
-
 ThreadX::Uint NorFlashBase::DriverCallbacks::initialise([[maybe_unused]] ThreadX::Native::LX_NOR_FLASH *norFlashPtr)
 {
     return LX_SUCCESS;
@@ -109,14 +111,14 @@ ThreadX::Uint NorFlashBase::DriverCallbacks::eraseBlock(
     ThreadX::Native::LX_NOR_FLASH *norFlashPtr, ThreadX::Ulong block, ThreadX::Ulong eraseCount)
 {
     auto &norFlash{static_cast<NorFlashBase &>(*norFlashPtr)};
-    return norFlash.m_driver.blockEraseCallback(norFlashPtr, block, eraseCount);
+    return norFlash.m_driver.eraseBlockCallback(norFlashPtr, block, eraseCount);
 }
 
 ThreadX::Uint NorFlashBase::DriverCallbacks::verifyErasedBlock(
     ThreadX::Native::LX_NOR_FLASH *norFlashPtr, ThreadX::Ulong block)
 {
     auto &norFlash{static_cast<NorFlashBase &>(*norFlashPtr)};
-    return norFlash.m_driver.blockErasedVerifyCallback(norFlashPtr, block);
+    return norFlash.m_driver.verifyErasedBlockCallback(norFlashPtr, block);
 }
 
 ThreadX::Uint NorFlashBase::DriverCallbacks::systemError(
