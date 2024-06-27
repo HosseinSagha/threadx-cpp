@@ -11,7 +11,6 @@ class NorFlashBase : protected ThreadX::Native::LX_NOR_FLASH
   public:
     struct Driver
     {
-        std::function<ThreadX::Uint(ThreadX::Native::LX_NOR_FLASH *)> initialiseCallback;
         std::function<ThreadX::Uint(ThreadX::Native::LX_NOR_FLASH *, ThreadX::Ulong *flashAddress,
                                     ThreadX::Ulong *destination, ThreadX::Ulong words)>
             readCallback;
@@ -24,7 +23,8 @@ class NorFlashBase : protected ThreadX::Native::LX_NOR_FLASH
         std::function<void(ThreadX::Native::LX_NOR_FLASH *, ThreadX::Uint errorCode)> systemErrorCallback;
     };
 
-    static constexpr ThreadX::Ulong m_sectorSize = 512; // LX_NOR_SECTOR_SIZE * sizeOfUlong;
+    static constexpr ThreadX::Ulong m_sectorSizeInWord =
+        512 / ThreadX::wordSize; // LX_NOR_SECTOR_SIZE * wordSize;
     constexpr ThreadX::Ulong sectorSize();
 
     NorFlashBase(const Driver &driver);
@@ -34,9 +34,9 @@ class NorFlashBase : protected ThreadX::Native::LX_NOR_FLASH
     Error close();
     //Error eraseAll();
     Error defragment(const ThreadX::Uint numberOfBlocks = 0);
-    Error readSector(const ThreadX::Ulong sectorNumber, std::span<std::byte, m_sectorSize> sectorData);
+    Error readSector(const ThreadX::Ulong sectorNumber, std::span<ThreadX::Ulong, m_sectorSizeInWord> sectorData);
     Error releaseSector(const ThreadX::Ulong sectorNumber);
-    Error writeSector(const ThreadX::Ulong sectorNumber, std::span<std::byte, m_sectorSize> sectorData);
+    Error writeSector(const ThreadX::Ulong sectorNumber, std::span<ThreadX::Ulong, m_sectorSizeInWord> sectorData);
 
   protected:
     static inline std::atomic_flag m_initialised = ATOMIC_FLAG_INIT;
@@ -59,7 +59,7 @@ class NorFlashBase : protected ThreadX::Native::LX_NOR_FLASH
     };
 
     Driver m_driver;
-    std::array<ThreadX::Ulong, m_sectorSize / ThreadX::sizeOfUlong> m_sectorBuffer{};
+    std::array<ThreadX::Ulong, m_sectorSizeInWord / ThreadX::wordSize> m_sectorBuffer{};
 };
 
 template <ThreadX::Ulong CacheSize = 0> class NorFlash : public NorFlashBase
@@ -72,7 +72,7 @@ template <ThreadX::Ulong CacheSize = 0> class NorFlash : public NorFlashBase
     using NorFlashBase::init;
     using NorFlashBase::m_initialised;
 
-    std::array<ThreadX::Ulong, CacheSize / ThreadX::sizeOfUlong> m_extendedCacheMemory{};
+    std::array<ThreadX::Ulong, CacheSize / ThreadX::wordSize> m_extendedCacheMemory{};
 };
 
 template <ThreadX::Ulong CacheSize>
@@ -80,7 +80,7 @@ NorFlash<CacheSize>::NorFlash(const ThreadX::Ulong storageSize, const ThreadX::U
                               const ThreadX::Ulong baseAddress)
     : NorFlashBase{driver}
 {
-    static_assert(CacheSize % m_sectorSize == 0);
+    static_assert(CacheSize % (m_sectorSizeInWord * ThreadX::wordSize) == 0);
     init(m_extendedCacheMemory, storageSize, blockSize, baseAddress);
 }
 } // namespace LevelX

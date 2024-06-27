@@ -100,11 +100,11 @@ QueueBase<Msg>::QueueBase(const auto &sendNotifyCallback) : m_sendNotifyCallback
 template <typename Msg>
 auto QueueBase<Msg>::create(const std::string_view name, const Ulong queueSizeInBytes, void *const queueStartPtr)
 {
-    static_assert(sizeof(Msg) % sizeof(sizeOfUlong) == 0, "Queue message size must be a multiple of word (32-bit).");
+    static_assert(sizeof(Msg) % sizeof(wordSize) == 0, "Queue message size must be a multiple of word size.");
 
     using namespace Native;
     [[maybe_unused]] Error error{tx_queue_create(
-        this, const_cast<char *>(name.data()), sizeof(Msg) / sizeof(sizeOfUlong), queueStartPtr, queueSizeInBytes)};
+        this, const_cast<char *>(name.data()), sizeof(Msg) / sizeof(wordSize), queueStartPtr, queueSizeInBytes)};
     assert(error == Error::success);
 
     if (m_sendNotifyCallback)

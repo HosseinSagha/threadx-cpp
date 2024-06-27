@@ -36,14 +36,8 @@ void NorFlashBase::init(std::span<ThreadX::Ulong> extendedCacheMemory, const Thr
 
     lx_nor_flash_base_address = reinterpret_cast<ThreadX::Ulong *>(baseAddress);
     lx_nor_flash_total_blocks = storageSize / blockSize;
-    lx_nor_flash_words_per_block = blockSize / ThreadX::sizeOfUlong;
+    lx_nor_flash_words_per_block = blockSize / ThreadX::wordSize;
     lx_nor_flash_sector_buffer = m_sectorBuffer.data();
-
-    if (m_driver.initialiseCallback)
-    {
-        [[maybe_unused]] Error error{m_driver.initialiseCallback(this)};
-        assert(error == Error::success);
-    }
 }
 
 Error NorFlashBase::open()
@@ -68,9 +62,10 @@ Error NorFlashBase::defragment(const ThreadX::Uint numberOfBlocks)
     }
 }
 
-Error NorFlashBase::readSector(const ThreadX::Ulong sectorNumber, std::span<std::byte, m_sectorSize> sectorData)
+Error NorFlashBase::readSector(
+    const ThreadX::Ulong sectorNumber, std::span<ThreadX::Ulong, m_sectorSizeInWord> sectorData)
 {
-    return Error{lx_nor_flash_sector_read(this, sectorNumber, &sectorData)};
+    return Error{lx_nor_flash_sector_read(this, sectorNumber, sectorData.data())};
 }
 
 Error NorFlashBase::releaseSector(const ThreadX::Ulong sectorNumber)
@@ -78,20 +73,20 @@ Error NorFlashBase::releaseSector(const ThreadX::Ulong sectorNumber)
     return Error{lx_nor_flash_sector_release(this, sectorNumber)};
 }
 
-Error NorFlashBase::writeSector(const ThreadX::Ulong sectorNumber, std::span<std::byte, m_sectorSize> sectorData)
+Error NorFlashBase::writeSector(
+    const ThreadX::Ulong sectorNumber, std::span<ThreadX::Ulong, m_sectorSizeInWord> sectorData)
 {
-    return Error{lx_nor_flash_sector_write(this, sectorNumber, &sectorData)};
+    return Error{lx_nor_flash_sector_write(this, sectorNumber, sectorData.data())};
 }
 
 constexpr ThreadX::Ulong NorFlashBase::sectorSize()
 {
-    return m_sectorSize;
+    return m_sectorSizeInWord * ThreadX::wordSize;
 }
 
-ThreadX::Uint NorFlashBase::DriverCallbacks::initialise(ThreadX::Native::LX_NOR_FLASH *norFlashPtr)
+ThreadX::Uint NorFlashBase::DriverCallbacks::initialise([[maybe_unused]] ThreadX::Native::LX_NOR_FLASH *norFlashPtr)
 {
-    auto &norFlash{static_cast<NorFlashBase &>(*norFlashPtr)};
-    return norFlash.m_driver.initialiseCallback(norFlashPtr);
+    return LX_SUCCESS;
 }
 
 ThreadX::Uint NorFlashBase::DriverCallbacks::read(

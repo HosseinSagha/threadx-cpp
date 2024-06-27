@@ -87,7 +87,7 @@ class TraceBase
 };
 
 ///
-template <Ulong Size> class Trace : public TraceBase, std::array<std::byte, Size>
+template <Ulong Size> class Trace : public TraceBase, std::array<Uchar, Size>
 {
   public:
     using Callback = void (*)(void *);

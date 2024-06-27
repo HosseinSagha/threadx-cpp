@@ -54,9 +54,9 @@ std::pair<Error, void *> BytePoolBase::allocate(
 
 /// byte memory pool from which to allocate the thread stacks and queues.
 /// \tparam Size size of byte pool in bytes
-template <Ulong Size> class BytePool : public BytePoolBase, std::array<Ulong, Size / sizeOfUlong> // Ulong alignment
+template <Ulong Size> class BytePool : public BytePoolBase, std::array<Ulong, Size / wordSize> // Ulong alignment
 {
-    static_assert(Size % sizeOfUlong == 0, "Pool size must be a multiple of Ulong size.");
+    static_assert(Size % wordSize == 0, "Pool size must be a multiple of word size.");
 
   public:
     ///
@@ -104,9 +104,9 @@ std::pair<Error, void *> BlockPoolBase::allocate(const std::chrono::duration<Rep
 }
 
 template <Ulong Size, Ulong BlockSize>
-class BlockPool : public BlockPoolBase, std::array<Ulong, Size / sizeOfUlong> // Ulong alignment
+class BlockPool : public BlockPoolBase, std::array<Ulong, Size / wordSize> // Ulong alignment
 {
-    static_assert(Size % sizeOfUlong == 0, "Pool size must be a multiple of Ulong size.");
+    static_assert(Size % wordSize == 0, "Pool size must be a multiple of word size.");
     static_assert(Size % (BlockSize + sizeof(void *)) == 0);
 
   public:

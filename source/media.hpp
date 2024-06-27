@@ -70,11 +70,13 @@ class MediaBase : protected ThreadX::Native::FX_MEDIA
     std::string_view name() const;
 
   protected:
-    static constexpr size_t volumNameLength{12};
     static inline std::atomic_flag m_fileSystemInitialised = ATOMIC_FLAG_INIT;
 
     MediaBase();
     ~MediaBase();
+
+  private:
+    static constexpr size_t volumNameLength{12};
 };
 
 template <class Clock, typename Duration>
@@ -128,13 +130,13 @@ template <SectorSize N = defaultSectorSize> class Media : public MediaBase
 
 #ifdef FX_ENABLE_FAULT_TOLERANT
     static constexpr ThreadX::Uint faultTolerantCacheSize{FX_FAULT_TOLERANT_MAXIMUM_LOG_FILE_SIZE};
-    static_assert(faultTolerantCacheSize % ThreadX::sizeOfUlong == 0,
-                  "Fault tolerant cache size must be a multiple of Ulong size.");
+    static_assert(
+        faultTolerantCacheSize % ThreadX::wordSize == 0, "Fault tolerant cache size must be a multiple of word size.");
     // the scratch memory size shall be at least 3072 bytes and must be multiple of sector size.
     static constexpr auto cacheSize = []() {
         return (N == SectorSize::twoKiloBytes or N == SectorSize::fourKilobytes)
-                   ? std::to_underlying(SectorSize::fourKilobytes) / ThreadX::sizeOfUlong
-                   : faultTolerantCacheSize / ThreadX::sizeOfUlong;
+                   ? std::to_underlying(SectorSize::fourKilobytes) / ThreadX::wordSize
+                   : faultTolerantCacheSize / ThreadX::wordSize;
     };
     std::array<ThreadX::Ulong, cacheSize()> m_faultTolerantCache{};
 #endif
@@ -142,7 +144,7 @@ template <SectorSize N = defaultSectorSize> class Media : public MediaBase
     void *m_driverInfoPtr;
     const NotifyCallback m_openNotifyCallback;
     const NotifyCallback m_closeNotifyCallback;
-    std::array<uint8_t, std::to_underlying(N)> m_mediaMemory{};
+    std::array<ThreadX::Uchar, std::to_underlying(N)> m_mediaMemory{};
 };
 
 template <SectorSize N> constexpr SectorSize Media<N>::sectorSize() const

@@ -16,7 +16,7 @@ class EventFlags : Native::TX_EVENT_FLAGS_GROUP
         clear
     };
 
-    static constexpr size_t eventFlagBit{sizeOfUlong * CHAR_BIT};
+    static constexpr size_t eventFlagBit{wordSize * CHAR_BIT};
     /// external callback type
     using NotifyCallback = std::function<void(EventFlags &)>;
     using Bitmask = std::bitset<EventFlags::eventFlagBit>;
