@@ -206,22 +206,6 @@ auto Media<N>::format(const std::string_view volumeName, const ThreadX::Ulong st
     assert(storageSize % std::to_underlying(N) == 0);
 
     return Error{
-#ifdef FX_ENABLE_EXFAT
-        fx_media_exFAT_format(
-            this,
-            Media::driverCallback,                 // Driver entry
-            m_driverInfoPtr,                       // could be RAM disk memory pointer
-            m_mediaMemory.data(),                  // Media buffer pointer
-            m_mediaMemory.size(),                  // Media buffer size
-            const_cast<char *>(volumeName.data()), // Volume Name
-            1,                                     // Number of FATs
-            0,                                     // Hidden sectors
-            storageSize / std::to_underlying(N),   // Total sectors
-            std::to_underlying(N),                 // Sector size
-            sectorPerCluster,                      // exFAT Sectors per cluster
-            12345,                                 // Volume ID
-            1)                                     // Boundary unit
-#else
         fx_media_format(
             this,
             Media::driverCallback,                 // Driver entry
@@ -237,7 +221,6 @@ auto Media<N>::format(const std::string_view volumeName, const ThreadX::Ulong st
             sectorPerCluster,                      // Sectors per cluster
             1,                                     // Heads
             1)                                     // Sectors per track
-#endif
     };
 }
 
