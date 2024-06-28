@@ -42,15 +42,15 @@ endif()
 set(THREADX_SUBDIR https://github.com/eclipse-threadx)
 FetchContent_Declare(threadx
                      GIT_REPOSITORY ${THREADX_SUBDIR}/threadx.git
-                     GIT_TAG origin/master
+                     GIT_TAG ${THREADX_VER}
                      SYSTEM)
 FetchContent_Declare(filex
                      GIT_REPOSITORY ${THREADX_SUBDIR}/filex.git
-                     GIT_TAG origin/master
+                     GIT_TAG ${THREADX_VER}
                      SYSTEM)
 FetchContent_Declare(levelx
                      GIT_REPOSITORY ${THREADX_SUBDIR}/levelx.git
-                     GIT_TAG origin/master
+                     GIT_TAG ${THREADX_VER}
                      SYSTEM)
 FetchContent_Declare(segger-rtt
                      GIT_REPOSITORY ${GITHUB_SUBDIR}/segger-rtt.git
