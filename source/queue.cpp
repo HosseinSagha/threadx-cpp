@@ -6,6 +6,11 @@ QueueBaseBase::QueueBaseBase() : Native::TX_QUEUE{}
 {
 }
 
+QueueBaseBase::~QueueBaseBase()
+{
+    tx_queue_delete(this);
+}
+
 Error QueueBaseBase::prioritise()
 {
     return Error{tx_queue_prioritize(this)};

@@ -22,6 +22,7 @@ class QueueBaseBase : protected Native::TX_QUEUE
 
   protected:
     QueueBaseBase();
+    ~QueueBaseBase();
 };
 
 ///
@@ -257,7 +258,6 @@ Queue<Msg, Pool>::Queue(
 
 template <typename Msg, class Pool> Queue<Msg, Pool>::~Queue()
 {
-    tx_queue_delete(this);
     m_pool.release(Native::TX_QUEUE::tx_queue_start);
 }
 } // namespace ThreadX

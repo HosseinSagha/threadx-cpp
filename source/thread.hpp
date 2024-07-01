@@ -199,8 +199,6 @@ Thread<Pool>::Thread(const std::string_view name, Pool &pool, const NotifyCallba
 
 template <class Pool> Thread<Pool>::~Thread()
 {
-    terminate();
-    tx_thread_delete(this);
     m_pool.release(tx_thread_stack_start);
 }
 } // namespace ThreadX

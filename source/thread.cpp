@@ -9,7 +9,11 @@ ThreadBase::ThreadBase(const NotifyCallback &entryExitNotifyCallback)
 {
 }
 
-ThreadBase::~ThreadBase() = default;
+ThreadBase::~ThreadBase()
+{
+    terminate();
+    tx_thread_delete(this);
+};
 
 Error ThreadBase::registerStackErrorNotifyCallback(const ErrorCallback &stackErrorNotifyCallback)
 {

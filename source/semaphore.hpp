@@ -10,6 +10,8 @@ namespace ThreadX
 class SemaphoreBase : protected Native::TX_SEMAPHORE
 {
   public:
+    using NotifyCallback = std::function<void(SemaphoreBase &)>;
+
     // none copyable or movable
     SemaphoreBase(const SemaphoreBase &) = delete;
     SemaphoreBase &operator=(const SemaphoreBase &) = delete;
@@ -27,6 +29,12 @@ class SemaphoreBase : protected Native::TX_SEMAPHORE
     /// \param duration
     template <typename Rep, typename Period> auto tryAcquireFor(const std::chrono::duration<Rep, Period> &duration);
 
+    ///  puts an instance into the specified counting semaphore, which in reality increments the counting semaphore by
+    ///  one. If the counting semaphore's current value is greater than or equal to the specified ceiling, the instance
+    ///  will not be put and a TX_CEILING_EXCEEDED error will be returned.
+    /// \param count
+    Error release(Ulong count = 1);
+
     /// places the highest priority thread suspended for an instance of the semaphore at the front of the suspension
     /// list. All other threads remain in the same FIFO order they were suspended in.
     Error prioritise();
@@ -39,9 +47,16 @@ class SemaphoreBase : protected Native::TX_SEMAPHORE
     /// Constructor
     /// \param initialCount
     /// \param releaseNotifyCallback The Notifycallback is not allowed to call any ThreadX API with a suspension option.
-    SemaphoreBase(const std::string_view name, const Ulong initialCount);
+    SemaphoreBase(const Ulong ceiling, const std::string_view name, const Ulong initialCount,
+                  const NotifyCallback &releaseNotifyCallback);
 
     ~SemaphoreBase();
+
+  private:
+    static void releaseNotifyCallback(auto notifySemaphorePtr);
+
+    Ulong m_ceiling;
+    const NotifyCallback m_releaseNotifyCallback;
 };
 
 template <class Clock, typename Duration>
@@ -56,66 +71,25 @@ auto SemaphoreBase::tryAcquireFor(const std::chrono::duration<Rep, Period> &dura
     return Error{tx_semaphore_get(this, TickTimer::ticks(std::chrono::duration_cast<TickTimer::Duration>(duration)))};
 }
 
-template <Ulong CeilingValue = std::numeric_limits<Ulong>::max()> class CountingSemaphore : public SemaphoreBase
+template <Ulong Ceiling = std::numeric_limits<Ulong>::max()> class CountingSemaphore : public SemaphoreBase
 {
   public:
-    using NotifyCallback = std::function<void(CountingSemaphore &)>;
-
     constexpr auto max() const;
 
     CountingSemaphore(
         const std::string_view name, const Ulong initialCount = 0, const NotifyCallback &releaseNotifyCallback = {});
-
-    ///  puts an instance into the specified counting semaphore, which in reality increments the counting semaphore by
-    ///  one. If the counting semaphore's current value is greater than or equal to the specified ceiling, the instance
-    ///  will not be put and a TX_CEILING_EXCEEDED error will be returned.
-    /// \param count
-    Error release(const Ulong count = 1);
-
-  private:
-    const NotifyCallback m_releaseNotifyCallback;
-
-    static void releaseNotifyCallback(auto notifySemaphorePtr);
 };
 
-template <Ulong CeilingValue> constexpr auto CountingSemaphore<CeilingValue>::max() const
+template <Ulong Ceiling> constexpr auto CountingSemaphore<Ceiling>::max() const
 {
-    return CeilingValue;
+    return Ceiling;
 }
 
-template <Ulong CeilingValue>
-CountingSemaphore<CeilingValue>::CountingSemaphore(
+template <Ulong Ceiling>
+CountingSemaphore<Ceiling>::CountingSemaphore(
     const std::string_view name, const Ulong initialCount, const NotifyCallback &releaseNotifyCallback)
-    : SemaphoreBase{name, initialCount}, m_releaseNotifyCallback{releaseNotifyCallback}
+    : SemaphoreBase{Ceiling, name, initialCount, releaseNotifyCallback}
 {
-    assert(initialCount <= CeilingValue);
-
-    if (m_releaseNotifyCallback)
-    {
-        [[maybe_unused]] Error error{tx_semaphore_put_notify(this, CountingSemaphore::releaseNotifyCallback)};
-        assert(error == Error::success);
-    }
-}
-
-template <Ulong CeilingValue> Error CountingSemaphore<CeilingValue>::release(Ulong count)
-{
-    while (count > 0)
-    {
-        if (Error error{tx_semaphore_ceiling_put(this, CeilingValue)}; error != Error::success)
-        {
-            return error;
-        }
-
-        --count;
-    }
-
-    return Error::success;
-}
-
-template <Ulong CeilingValue> void CountingSemaphore<CeilingValue>::releaseNotifyCallback(auto notifySemaphorePtr)
-{
-    auto &semaphore{static_cast<CountingSemaphore &>(*notifySemaphorePtr)};
-    semaphore.m_releaseNotifyCallback(semaphore);
 }
 
 using BinarySemaphore = CountingSemaphore<1>;
