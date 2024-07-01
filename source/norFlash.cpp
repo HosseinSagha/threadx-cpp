@@ -86,8 +86,14 @@ Error NorFlashBase::writeSector(
     return Error{lx_nor_flash_sector_write(this, sectorNumber, sectorData.data())};
 }
 
-ThreadX::Uint NorFlashBase::DriverCallbacks::initialise([[maybe_unused]] ThreadX::Native::LX_NOR_FLASH *norFlashPtr)
+ThreadX::Uint NorFlashBase::DriverCallbacks::initialise(ThreadX::Native::LX_NOR_FLASH *norFlashPtr)
 {
+    auto &norFlash{static_cast<NorFlashBase &>(*norFlashPtr)};
+    if (norFlash.m_driver.initialiseCallback)
+    {
+        return norFlash.m_driver.initialiseCallback(norFlashPtr);
+    }
+
     return LX_SUCCESS;
 }
 

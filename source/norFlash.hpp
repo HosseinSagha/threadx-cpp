@@ -14,16 +14,19 @@ class NorFlashBase : protected ThreadX::Native::LX_NOR_FLASH
   public:
     struct Driver
     {
-        std::function<ThreadX::Uint(ThreadX::Native::LX_NOR_FLASH *, ThreadX::Ulong *flashAddress,
+        std::function<ThreadX::Uint(ThreadX::Native::LX_NOR_FLASH *norFlashPtr)> initialiseCallback;
+        std::function<ThreadX::Uint(ThreadX::Native::LX_NOR_FLASH *norFlashPtr, ThreadX::Ulong *flashAddress,
                                     ThreadX::Ulong *destination, ThreadX::Ulong words)>
             readCallback;
-        std::function<ThreadX::Uint(ThreadX::Native::LX_NOR_FLASH *, ThreadX::Ulong *flashAddress,
+        std::function<ThreadX::Uint(ThreadX::Native::LX_NOR_FLASH *norFlashPtr, ThreadX::Ulong *flashAddress,
                                     ThreadX::Ulong *source, ThreadX::Ulong words)>
             writeCallback;
-        std::function<ThreadX::Uint(ThreadX::Native::LX_NOR_FLASH *, ThreadX::Ulong block, ThreadX::Ulong eraseCount)>
+        std::function<ThreadX::Uint(
+            ThreadX::Native::LX_NOR_FLASH *norFlashPtr, ThreadX::Ulong block, ThreadX::Ulong eraseCount)>
             eraseBlockCallback;
-        std::function<ThreadX::Uint(ThreadX::Native::LX_NOR_FLASH *, ThreadX::Ulong block)> verifyErasedBlockCallback;
-        std::function<void(ThreadX::Native::LX_NOR_FLASH *, ThreadX::Uint errorCode)> systemErrorCallback;
+        std::function<ThreadX::Uint(ThreadX::Native::LX_NOR_FLASH *norFlashPtr, ThreadX::Ulong block)>
+            verifyErasedBlockCallback;
+        std::function<void(ThreadX::Native::LX_NOR_FLASH *norFlashPtr, ThreadX::Uint errorCode)> systemErrorCallback;
     };
 
     static constexpr ThreadX::Uint m_sectorSizeInWord = 512 / ThreadX::wordSize; // LX_NOR_SECTOR_SIZE;
@@ -61,7 +64,7 @@ class NorFlashBase : protected ThreadX::Native::LX_NOR_FLASH
     };
 
     Driver m_driver;
-    std::array<ThreadX::Ulong, m_sectorSizeInWord / ThreadX::wordSize> m_sectorBuffer{};
+    std::array<ThreadX::Ulong, m_sectorSizeInWord> m_sectorBuffer{};
 };
 
 constexpr FileX::SectorSize NorFlashBase::sectorSize()
