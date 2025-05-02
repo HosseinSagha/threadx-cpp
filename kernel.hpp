@@ -21,7 +21,7 @@ enum class State
 
 /// Basic lockable class that prevents task and interrupt context switches while locked.
 /// it can either be used as a scoped object or for freely lock/unlucking.
-class CriticalSection
+class CriticalSection final
 {
   public:
     explicit CriticalSection();
@@ -38,7 +38,7 @@ class CriticalSection
 
 void start();
 
-/// 
+///
 /// \return true if it is called in a thread
 bool inThread();
 

@@ -3,7 +3,8 @@
 
 namespace ThreadX
 {
-EventFlags::EventFlags(const std::string_view name, const NotifyCallback &setNotifyCallback) : Native::TX_EVENT_FLAGS_GROUP{}, m_setNotifyCallback{setNotifyCallback}
+EventFlags::EventFlags(const std::string_view name, const NotifyCallback &setNotifyCallback)
+    : Native::TX_EVENT_FLAGS_GROUP{}, m_setNotifyCallback{setNotifyCallback}
 {
     using namespace Native;
     [[maybe_unused]] Error error{tx_event_flags_create(this, const_cast<char *>(name.data()))};
@@ -32,17 +33,17 @@ Error EventFlags::clear(const Bitmask &bitMask)
     return Error{tx_event_flags_set(this, (~bitMask).to_ulong(), std::to_underlying(FlagOption::andInto))};
 }
 
-EventFlags::BitmaskPair EventFlags::get(const Bitmask &bitMask, const Option option)
+EventFlags::ExpectedBitmask EventFlags::get(const Bitmask &bitMask, const Option option)
 {
     return waitAllFor(bitMask, TickTimer::noWait, option);
 }
 
-EventFlags::BitmaskPair EventFlags::waitAll(const Bitmask &bitMask, const Option option)
+EventFlags::ExpectedBitmask EventFlags::waitAll(const Bitmask &bitMask, const Option option)
 {
     return waitAllFor(bitMask, TickTimer::waitForever, option);
 }
 
-EventFlags::BitmaskPair EventFlags::waitAny(const Bitmask &bitMask, const Option option)
+EventFlags::ExpectedBitmask EventFlags::waitAny(const Bitmask &bitMask, const Option option)
 {
     return waitAnyFor(bitMask, TickTimer::waitForever, option);
 }

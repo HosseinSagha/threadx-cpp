@@ -3,8 +3,8 @@
 #include "tickTimer.hpp"
 #include "txCommon.hpp"
 #include <array>
-#include <string_view>
 #include <cassert>
+#include <string_view>
 
 namespace ThreadX
 {
@@ -20,12 +20,14 @@ class BytePoolBase
 
 /// byte memory pool from which to allocate the thread stacks and queues.
 /// \tparam Size size of byte pool in bytes
-template <Ulong Size> class BytePool : Native::TX_BYTE_POOL, BytePoolBase
+template <Ulong Size>
+class BytePool final : Native::TX_BYTE_POOL, BytePoolBase
 {
     static_assert(Size % wordSize == 0, "Pool size must be a multiple of word size.");
 
   public:
-    template <class Pool> friend class Allocation;
+    template <class Pool>
+    friend class Allocation;
 
     explicit BytePool(const std::string_view name);
     ~BytePool();
@@ -39,25 +41,29 @@ template <Ulong Size> class BytePool : Native::TX_BYTE_POOL, BytePoolBase
     std::array<Ulong, Size / wordSize> m_pool{}; // Ulong alignment
 };
 
-template <Ulong Size> BytePool<Size>::BytePool(const std::string_view name) : Native::TX_BYTE_POOL{}
+template <Ulong Size>
+BytePool<Size>::BytePool(const std::string_view name) : Native::TX_BYTE_POOL{}
 {
     using namespace Native;
     [[maybe_unused]] Error error{tx_byte_pool_create(this, const_cast<char *>(name.data()), m_pool.data(), Size)};
     assert(error == Error::success);
 }
 
-template <Ulong Size> BytePool<Size>::~BytePool()
+template <Ulong Size>
+BytePool<Size>::~BytePool()
 {
     [[maybe_unused]] Error error{tx_byte_pool_delete(this)};
     assert(error == Error::success);
 }
 
-template <Ulong Size> auto BytePool<Size>::prioritise()
+template <Ulong Size>
+auto BytePool<Size>::prioritise()
 {
     return Error{tx_byte_pool_prioritize(this)};
 }
 
-template <Ulong Size> auto BytePool<Size>::name() const
+template <Ulong Size>
+auto BytePool<Size>::name() const
 {
     return std::string_view{tx_byte_pool_name};
 }
@@ -72,13 +78,15 @@ class BlockPoolBase
     explicit BlockPoolBase() = default;
 };
 
-template <Ulong Size, Ulong BlockSize> class BlockPool : Native::TX_BLOCK_POOL, BlockPoolBase
+template <Ulong Size, Ulong BlockSize>
+class BlockPool final : Native::TX_BLOCK_POOL, BlockPoolBase
 {
     static_assert(Size % wordSize == 0, "Pool size must be a multiple of word size.");
     static_assert(Size % (BlockSize + sizeof(std::byte *)) == 0);
 
   public:
-    template <class Pool> friend class Allocation;
+    template <class Pool>
+    friend class Allocation;
 
     /// block memory pool from which to allocate the thread stacks and queues.
     /// total blocks = (total bytes) / (block size + sizeof(std::byte *))
@@ -96,35 +104,41 @@ template <Ulong Size, Ulong BlockSize> class BlockPool : Native::TX_BLOCK_POOL, 
     std::array<Ulong, Size / wordSize> m_pool{}; // Ulong alignment
 };
 
-template <Ulong Size, Ulong BlockSize> BlockPool<Size, BlockSize>::BlockPool(const std::string_view name) : Native::TX_BLOCK_POOL{}
+template <Ulong Size, Ulong BlockSize>
+BlockPool<Size, BlockSize>::BlockPool(const std::string_view name) : Native::TX_BLOCK_POOL{}
 {
     using namespace Native;
     [[maybe_unused]] Error error{tx_block_pool_create(this, const_cast<char *>(name.data()), BlockSize, m_pool.data(), Size)};
     assert(error == Error::success);
 }
 
-template <Ulong Size, Ulong BlockSize> BlockPool<Size, BlockSize>::~BlockPool()
+template <Ulong Size, Ulong BlockSize>
+BlockPool<Size, BlockSize>::~BlockPool()
 {
     [[maybe_unused]] Error error{tx_block_pool_delete(this)};
     assert(error == Error::success);
 }
 
-template <Ulong Size, Ulong BlockSize> auto BlockPool<Size, BlockSize>::blockSize() const
+template <Ulong Size, Ulong BlockSize>
+auto BlockPool<Size, BlockSize>::blockSize() const
 {
     return tx_block_pool_block_size;
 }
 
-template <Ulong Size, Ulong BlockSize> auto BlockPool<Size, BlockSize>::prioritise()
+template <Ulong Size, Ulong BlockSize>
+auto BlockPool<Size, BlockSize>::prioritise()
 {
     return Error{tx_block_pool_prioritize(this)};
 }
 
-template <Ulong Size, Ulong BlockSize> auto BlockPool<Size, BlockSize>::name() const
+template <Ulong Size, Ulong BlockSize>
+auto BlockPool<Size, BlockSize>::name() const
 {
     return std::string_view{tx_block_pool_name};
 }
 
-template <class Pool> class Allocation
+template <class Pool>
+class Allocation final
 {
   public:
     Allocation(const Allocation &) = delete;
@@ -155,7 +169,8 @@ template <typename Rep, typename Period>
 Allocation<Pool>::Allocation(Pool &pool, const Ulong memorySizeInBytes, const std::chrono::duration<Rep, Period> &duration)
     requires(std::is_base_of_v<BytePoolBase, Pool>)
 {
-    [[maybe_unused]] Error error{tx_byte_allocate(std::addressof(pool), reinterpret_cast<void **>(std::addressof(memoryPtr)), memorySizeInBytes, TickTimer::ticks(duration))};
+    [[maybe_unused]] Error error{
+        tx_byte_allocate(std::addressof(pool), reinterpret_cast<void **>(std::addressof(memoryPtr)), memorySizeInBytes, TickTimer::ticks(duration))};
     assert(error == Error::success);
 }
 
@@ -168,7 +183,8 @@ Allocation<Pool>::Allocation(Pool &pool, const std::chrono::duration<Rep, Period
     assert(error == Error::success);
 }
 
-template <class Pool> auto Allocation<Pool>::get()
+template <class Pool>
+auto Allocation<Pool>::get()
 {
     return memoryPtr;
 }

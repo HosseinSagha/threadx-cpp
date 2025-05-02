@@ -3,6 +3,7 @@
 #include "fxCommon.hpp"
 #include <cassert>
 #include <cstring>
+#include <expected>
 #include <functional>
 #include <span>
 #include <string_view>
@@ -10,7 +11,8 @@
 
 namespace FileX
 {
-template <MediaSectorSize N> class Media;
+template <MediaSectorSize N>
+class Media;
 
 enum class OpenOption : ThreadX::Uint
 {
@@ -39,23 +41,24 @@ enum class TruncateOption
     release
 };
 
-class File : ThreadX::Native::FX_FILE
+class File final: ThreadX::Native::FX_FILE
 {
   public:
-    using UlongPair = std::pair<Error, ThreadX::Ulong>;
-    using Ulong64Pair = std::pair<Error, ThreadX::Ulong64>;
+    using ExpectedUlong = std::expected<ThreadX::Ulong, Error>;
+    using ExpectedUlong64 = std::expected<ThreadX::Ulong64, Error>;
     using NotifyCallback = std::function<void(File &)>;
 
-    template <MediaSectorSize N> explicit File(const std::string_view fileName, Media<N> &media, const OpenOption option = OpenOption::read, NotifyCallback writeNotifyCallback = {});
+    template <MediaSectorSize N>
+    explicit File(const std::string_view fileName, Media<N> &media, const OpenOption option = OpenOption::read, const NotifyCallback &writeNotifyCallback = {});
     ~File();
-    Ulong64Pair allocate(ThreadX::Ulong64 size, AllocateOption option = AllocateOption::strict);
-    Error truncate(ThreadX::Ulong64 newSize, TruncateOption option = TruncateOption::noRelease);
+    ExpectedUlong64 allocate(const ThreadX::Ulong64 size, const AllocateOption option = AllocateOption::strict);
+    Error truncate(const ThreadX::Ulong64 newSize, const TruncateOption option = TruncateOption::noRelease);
     Error seek(const ThreadX::Ulong64 offset);
     Error relativeSeek(const ThreadX::Ulong64 offset, const SeekFrom from = SeekFrom::forward);
     Error write(const std::span<std::byte> data);
     Error write(const std::string_view str);
-    UlongPair read(std::span<std::byte> buffer);
-    UlongPair read(std::span<std::byte> buffer, const ThreadX::Ulong size);
+    ExpectedUlong read(const std::span<std::byte> buffer);
+    ExpectedUlong read(const std::span<std::byte> buffer, const ThreadX::Ulong size);
 
   private:
     static void writeNotifyCallback(ThreadX::Native::FX_FILE *notifyFilePtr);
@@ -63,7 +66,9 @@ class File : ThreadX::Native::FX_FILE
     const NotifyCallback m_writeNotifyCallback;
 };
 
-template <MediaSectorSize N> File::File(const std::string_view fileName, Media<N> &media, const OpenOption option, NotifyCallback writeNotifyCallback) : ThreadX::Native::FX_FILE{}, m_writeNotifyCallback{writeNotifyCallback}
+template <MediaSectorSize N>
+File::File(const std::string_view fileName, Media<N> &media, const OpenOption option, const NotifyCallback &writeNotifyCallback)
+    : ThreadX::Native::FX_FILE{}, m_writeNotifyCallback{writeNotifyCallback}
 {
     using namespace ThreadX::Native;
     [[maybe_unused]] Error error{fx_file_open(std::addressof(media), this, const_cast<char *>(fileName.data()), std::to_underlying(option))};

@@ -19,7 +19,7 @@ enum class InheritMode : Uint
 };
 
 /// Mutex for locking access to resources.
-class Mutex : Native::TX_MUTEX
+class Mutex final : Native::TX_MUTEX
 {
   public:
     /// \param inheritMode
@@ -40,9 +40,11 @@ class Mutex : Native::TX_MUTEX
     // must be used for calls from initialization, timers, and ISRs
     Error try_lock();
 
-    template <class Clock, typename Duration> auto try_lock_until(const std::chrono::time_point<Clock, Duration> &time);
+    template <class Clock, typename Duration>
+    auto try_lock_until(const std::chrono::time_point<Clock, Duration> &time);
 
-    template <typename Rep, typename Period> auto try_lock_for(const std::chrono::duration<Rep, Period> &duration);
+    template <typename Rep, typename Period>
+    auto try_lock_for(const std::chrono::duration<Rep, Period> &duration);
 
     /// decrements the ownership count of the specified mutex.
     /// If the ownership count is zero, the mutex is made available.
@@ -57,12 +59,14 @@ class Mutex : Native::TX_MUTEX
     uintptr_t lockingThreadID() const;
 };
 
-template <class Clock, typename Duration> auto Mutex::try_lock_until(const std::chrono::time_point<Clock, Duration> &time)
+template <class Clock, typename Duration>
+auto Mutex::try_lock_until(const std::chrono::time_point<Clock, Duration> &time)
 {
     return try_lock_for(time - Clock::now());
 }
 
-template <typename Rep, typename Period> auto Mutex::try_lock_for(const std::chrono::duration<Rep, Period> &duration)
+template <typename Rep, typename Period>
+auto Mutex::try_lock_for(const std::chrono::duration<Rep, Period> &duration)
 {
     return Error{tx_mutex_get(this, TickTimer::ticks(duration))};
 }
