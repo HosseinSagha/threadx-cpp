@@ -11,7 +11,7 @@
 
 namespace ThreadX
 {
-template <typename Msg, class Pool>
+template <typename Message, class Pool>
 class Queue final : Native::TX_QUEUE
 {
   public:
@@ -47,36 +47,36 @@ class Queue final : Native::TX_QUEUE
     /// \param duration
     /// \return
     template <typename Rep, typename Period>
-    auto tryReceiveFor(const std::chrono::duration<Rep, Period> &duration) -> std::expected<Msg, Error>;
+    auto tryReceiveFor(const std::chrono::duration<Rep, Period> &duration) -> std::expected<Message, Error>;
 
-    auto send(const Msg &message);
+    auto send(const Message &message);
 
     // must be used for calls from initialization, timers, and ISRs
-    auto trySend(const Msg &message);
+    auto trySend(const Message &message);
 
     template <class Clock, typename Duration>
-    auto trySendUntil(const Msg &message, const std::chrono::time_point<Clock, Duration> &time);
+    auto trySendUntil(const Message &message, const std::chrono::time_point<Clock, Duration> &time);
 
     ///
     /// \param duration
     /// \param message
     /// \return
     template <typename Rep, typename Period>
-    auto trySendFor(const Msg &message, const std::chrono::duration<Rep, Period> &duration);
+    auto trySendFor(const Message &message, const std::chrono::duration<Rep, Period> &duration);
 
-    auto sendFront(const Msg &message);
+    auto sendFront(const Message &message);
 
     // must be used for calls from initialization, timers, and ISRs
-    auto trySendFront(const Msg &message);
+    auto trySendFront(const Message &message);
 
     template <class Clock, typename Duration>
-    auto trySendFrontUntil(const Msg &message, const std::chrono::time_point<Clock, Duration> &time);
+    auto trySendFrontUntil(const Message &message, const std::chrono::time_point<Clock, Duration> &time);
     ///
     /// \param duration
     /// \param message
     /// \return
     template <typename Rep, typename Period>
-    auto trySendFrontFor(const Msg &message, const std::chrono::duration<Rep, Period> &duration);
+    auto trySendFrontFor(const Message &message, const std::chrono::duration<Rep, Period> &duration);
 
     /// This service places the highest priority thread suspended for a message (or to place a message) on this queue at
     /// the front of the suspension list. All other threads remain in the same FIFO order they were suspended in.
@@ -94,31 +94,31 @@ class Queue final : Native::TX_QUEUE
     const NotifyCallback m_sendNotifyCallback;
 };
 
-template <typename Msg, class Pool>
-Queue<Msg, Pool>::Queue(const std::string_view name, Pool &pool, const Ulong queueSizeInNumOfMessages, const NotifyCallback &sendNotifyCallback)
+template <typename Message, class Pool>
+Queue<Message, Pool>::Queue(const std::string_view name, Pool &pool, const Ulong queueSizeInNumOfMessages, const NotifyCallback &sendNotifyCallback)
     requires(std::is_base_of_v<BytePoolBase, Pool>)
-    : Native::TX_QUEUE{}, m_queueAlloc{pool, queueSizeInNumOfMessages * sizeof(Msg)}, m_sendNotifyCallback{sendNotifyCallback}
+    : Native::TX_QUEUE{}, m_queueAlloc{pool, queueSizeInNumOfMessages * sizeof(Message)}, m_sendNotifyCallback{sendNotifyCallback}
 {
-    init(name, queueSizeInNumOfMessages * sizeof(Msg));
+    init(name, queueSizeInNumOfMessages * sizeof(Message));
 }
 
-template <typename Msg, class Pool>
-Queue<Msg, Pool>::Queue(const std::string_view name, Pool &pool, const NotifyCallback &sendNotifyCallback)
+template <typename Message, class Pool>
+Queue<Message, Pool>::Queue(const std::string_view name, Pool &pool, const NotifyCallback &sendNotifyCallback)
     requires(std::is_base_of_v<BlockPoolBase, Pool>)
     : Native::TX_QUEUE{}, m_queueAlloc{pool}, m_sendNotifyCallback{sendNotifyCallback}
 {
-    assert(pool.blockSize() % sizeof(Msg) == 0);
+    assert(pool.blockSize() % sizeof(Message) == 0);
 
     init(name, pool.blockSize());
 }
 
-template <typename Msg, class Pool>
-auto Queue<Msg, Pool>::init(const std::string_view name, const Ulong queueSizeInBytes)
+template <typename Message, class Pool>
+auto Queue<Message, Pool>::init(const std::string_view name, const Ulong queueSizeInBytes)
 {
-    static_assert(sizeof(Msg) % sizeof(wordSize) == 0, "Queue message size must be a multiple of word size.");
+    static_assert(sizeof(Message) % sizeof(wordSize) == 0, "Queue message size must be a multiple of word size.");
 
     using namespace Native;
-    [[maybe_unused]] Error error{tx_queue_create(this, const_cast<char *>(name.data()), sizeof(Msg) / sizeof(wordSize), m_queueAlloc.get(), queueSizeInBytes)};
+    [[maybe_unused]] Error error{tx_queue_create(this, const_cast<char *>(name.data()), sizeof(Message) / sizeof(wordSize), m_queueAlloc.get(), queueSizeInBytes)};
     assert(error == Error::success);
 
     if (m_sendNotifyCallback)
@@ -128,44 +128,44 @@ auto Queue<Msg, Pool>::init(const std::string_view name, const Ulong queueSizeIn
     }
 }
 
-template <typename Msg, class Pool>
-Queue<Msg, Pool>::~Queue()
+template <typename Message, class Pool>
+Queue<Message, Pool>::~Queue()
 {
     [[maybe_unused]] Error error{tx_queue_delete(this)};
     assert(error == Error::success);
 }
 
-template <typename Msg, class Pool>
-constexpr size_t Queue<Msg, Pool>::messageSize()
+template <typename Message, class Pool>
+constexpr size_t Queue<Message, Pool>::messageSize()
 {
-    return sizeof(Msg);
+    return sizeof(Message);
 }
 
-template <typename Msg, class Pool>
-auto Queue<Msg, Pool>::receive()
+template <typename Message, class Pool>
+auto Queue<Message, Pool>::receive()
 {
     return tryReceiveFor(TickTimer::waitForever);
 }
 
 // must be used for calls from initialization, timers, and ISRs
-template <typename Msg, class Pool>
-auto Queue<Msg, Pool>::tryReceive()
+template <typename Message, class Pool>
+auto Queue<Message, Pool>::tryReceive()
 {
     return tryReceiveFor(TickTimer::noWait);
 }
 
-template <typename Msg, class Pool>
+template <typename Message, class Pool>
 template <class Clock, typename Duration>
-auto Queue<Msg, Pool>::tryReceiveUntil(const std::chrono::time_point<Clock, Duration> &time)
+auto Queue<Message, Pool>::tryReceiveUntil(const std::chrono::time_point<Clock, Duration> &time)
 {
     return tryReceiveFor(time - Clock::now());
 }
 
-template <typename Msg, class Pool>
+template <typename Message, class Pool>
 template <typename Rep, typename Period>
-auto Queue<Msg, Pool>::tryReceiveFor(const std::chrono::duration<Rep, Period> &duration) -> std::expected<Msg, Error>
+auto Queue<Message, Pool>::tryReceiveFor(const std::chrono::duration<Rep, Period> &duration) -> std::expected<Message, Error>
 {
-    Msg message;
+    Message message;
     if (Error error{tx_queue_receive(this, std::addressof(message), TickTimer::ticks(duration))}; error != Error::success)
     {
         return std::unexpected(error);
@@ -174,22 +174,22 @@ auto Queue<Msg, Pool>::tryReceiveFor(const std::chrono::duration<Rep, Period> &d
     return message;
 }
 
-template <typename Msg, class Pool>
-auto Queue<Msg, Pool>::send(const Msg &message)
+template <typename Message, class Pool>
+auto Queue<Message, Pool>::send(const Message &message)
 {
     return trySendFor(message, TickTimer::waitForever);
 }
 
 // must be used for calls from initialization, timers, and ISRs
-template <typename Msg, class Pool>
-auto Queue<Msg, Pool>::trySend(const Msg &message)
+template <typename Message, class Pool>
+auto Queue<Message, Pool>::trySend(const Message &message)
 {
     return trySendFor(message, TickTimer::noWait);
 }
 
-template <typename Msg, class Pool>
+template <typename Message, class Pool>
 template <class Clock, typename Duration>
-auto Queue<Msg, Pool>::trySendUntil(const Msg &message, const std::chrono::time_point<Clock, Duration> &time)
+auto Queue<Message, Pool>::trySendUntil(const Message &message, const std::chrono::time_point<Clock, Duration> &time)
 {
     return trySendFor(message, time - Clock::now());
 }
@@ -198,29 +198,29 @@ auto Queue<Msg, Pool>::trySendUntil(const Msg &message, const std::chrono::time_
 /// \param duration
 /// \param message
 /// \return
-template <typename Msg, class Pool>
+template <typename Message, class Pool>
 template <typename Rep, typename Period>
-auto Queue<Msg, Pool>::trySendFor(const Msg &message, const std::chrono::duration<Rep, Period> &duration)
+auto Queue<Message, Pool>::trySendFor(const Message &message, const std::chrono::duration<Rep, Period> &duration)
 {
-    return Error{tx_queue_send(this, std::addressof(const_cast<Msg &>(message)), TickTimer::ticks(duration))};
+    return Error{tx_queue_send(this, std::addressof(const_cast<Message &>(message)), TickTimer::ticks(duration))};
 }
 
-template <typename Msg, class Pool>
-auto Queue<Msg, Pool>::sendFront(const Msg &message)
+template <typename Message, class Pool>
+auto Queue<Message, Pool>::sendFront(const Message &message)
 {
     return trySendFrontFor(message, TickTimer::waitForever);
 }
 
 // must be used for calls from initialization, timers, and ISRs
-template <typename Msg, class Pool>
-auto Queue<Msg, Pool>::trySendFront(const Msg &message)
+template <typename Message, class Pool>
+auto Queue<Message, Pool>::trySendFront(const Message &message)
 {
     return trySendFrontFor(message, TickTimer::noWait);
 }
 
-template <typename Msg, class Pool>
+template <typename Message, class Pool>
 template <class Clock, typename Duration>
-auto Queue<Msg, Pool>::trySendFrontUntil(const Msg &message, const std::chrono::time_point<Clock, Duration> &time)
+auto Queue<Message, Pool>::trySendFrontUntil(const Message &message, const std::chrono::time_point<Clock, Duration> &time)
 {
     return trySendFrontFor(message, time - Clock::now());
 }
@@ -229,33 +229,33 @@ auto Queue<Msg, Pool>::trySendFrontUntil(const Msg &message, const std::chrono::
 /// \param duration
 /// \param message
 /// \return
-template <typename Msg, class Pool>
+template <typename Message, class Pool>
 template <typename Rep, typename Period>
-auto Queue<Msg, Pool>::trySendFrontFor(const Msg &message, const std::chrono::duration<Rep, Period> &duration)
+auto Queue<Message, Pool>::trySendFrontFor(const Message &message, const std::chrono::duration<Rep, Period> &duration)
 {
-    return Error{tx_queue_front_send(this, std::addressof(const_cast<Msg &>(message)), TickTimer::ticks(duration))};
+    return Error{tx_queue_front_send(this, std::addressof(const_cast<Message &>(message)), TickTimer::ticks(duration))};
 }
 
-template <typename Msg, class Pool>
-auto Queue<Msg, Pool>::prioritise()
+template <typename Message, class Pool>
+auto Queue<Message, Pool>::prioritise()
 {
     return Error{tx_queue_prioritize(this)};
 }
 
-template <typename Msg, class Pool>
-auto Queue<Msg, Pool>::flush()
+template <typename Message, class Pool>
+auto Queue<Message, Pool>::flush()
 {
     return Error{tx_queue_flush(this)};
 }
 
-template <typename Msg, class Pool>
-auto Queue<Msg, Pool>::name() const
+template <typename Message, class Pool>
+auto Queue<Message, Pool>::name() const
 {
     return std::string_view{tx_queue_name};
 }
 
-template <typename Msg, class Pool>
-auto Queue<Msg, Pool>::sendNotifyCallback(auto queuePtr)
+template <typename Message, class Pool>
+auto Queue<Message, Pool>::sendNotifyCallback(auto queuePtr)
 {
     auto &queue{static_cast<Queue &>(*queuePtr)};
     queue.m_sendNotifyCallback(queue);

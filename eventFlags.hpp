@@ -70,13 +70,13 @@ class EventFlags final : Native::TX_EVENT_FLAGS_GROUP
         allClear ///< allClear resume, if all flags in bitmask are set and then clear.
     };
 
+    static void setNotifyCallback(Native::TX_EVENT_FLAGS_GROUP *notifyGroupPtr);
+
     /// \param bitMask flag bitmask to get
     /// \param duration Wait duration
     /// \param option \sa Option
     /// \return actual flags set
     ExpectedBitmask waitFor(const Bitmask &bitMask, const auto &duration, const FlagOption flagOption);
-
-    static void setNotifyCallback(Native::TX_EVENT_FLAGS_GROUP *notifyGroupPtr);
 
     const NotifyCallback m_setNotifyCallback;
 };
