@@ -4,7 +4,7 @@
 
 namespace ThreadX
 {
-TickTimer::TimePoint TickTimer::now()
+auto TickTimer::now() -> TimePoint
 {
     return TimePoint{Duration{Native::tx_time_get()}};
 }
@@ -15,32 +15,32 @@ TickTimer::~TickTimer()
     assert(error == Error::success);
 }
 
-Error TickTimer::activate()
+auto TickTimer::activate() -> Error
 {
     return Error{tx_timer_activate(this)};
 }
 
-Error TickTimer::deactivate()
+auto TickTimer::deactivate() -> Error
 {
     return Error{tx_timer_deactivate(this)};
 }
 
-Error TickTimer::reset()
+auto TickTimer::reset() -> Error
 {
     return reset(Duration{m_timeoutTicks}, m_type, m_activationType);
 }
 
-size_t TickTimer::id() const
+auto TickTimer::id() const -> size_t
 {
     return m_id;
 }
 
-std::string_view TickTimer::name() const
+auto TickTimer::name() const -> std::string_view
 {
     return std::string_view{tx_timer_name};
 }
 
-void TickTimer::expirationCallback(const Ulong timerPtr)
+auto TickTimer::expirationCallback(const Ulong timerPtr) -> void
 {
     auto &timer{*reinterpret_cast<TickTimer *>(timerPtr)};
     timer.m_expirationCallback(timer.m_id);

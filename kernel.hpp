@@ -11,6 +11,11 @@ extern "C" {
 }
 } // namespace ThreadX::Native
 
+namespace ThreadX
+{
+auto application() -> void;
+}
+
 namespace ThreadX::Kernel
 {
 enum class State
@@ -27,30 +32,25 @@ class CriticalSection final
     explicit CriticalSection();
     ~CriticalSection();
     /// Locks the CPU, preventing thread and interrupt switches.
-    static void lock();
+    static auto lock() -> void;
     /// Unlocks the CPU, allowing other interrupts and threads to preempt the current execution context.
-    static void unlock();
+    static auto unlock() -> void;
 
   private:
     static inline std::atomic_flag m_locked = ATOMIC_FLAG_INIT;
     static inline Native::TX_INTERRUPT_SAVE_AREA
 };
 
-void start();
+auto start() -> void;
 
 ///
 /// \return true if it is called in a thread
-bool inThread();
+auto inThread() -> bool;
 
 /// Determines if the current execution context is inside an interrupt service routine.
 /// \return true if the current execution context is ISR, false otherwise
 
-bool inIsr();
+auto inIsr() -> bool;
 
-State state();
+auto state() -> State;
 }; // namespace ThreadX::Kernel
-
-namespace ThreadX
-{
-[[gnu::weak]] void application();
-}

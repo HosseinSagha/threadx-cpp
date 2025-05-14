@@ -61,52 +61,52 @@ class Media : ThreadX::Native::FX_MEDIA, MediaBase
     Media(const Media &) = delete;
     Media &operator=(const Media &) = delete;
 
-    static constexpr MediaSectorSize sectorSize();
-    static auto setFileSystemTime();
+    static constexpr auto sectorSize() -> MediaSectorSize;
+    static auto setFileSystemTime() -> Error;
     // Once initialized by this constructor, the application should call fx_system_date_set and fx_system_time_set to start with an accurate system date and
     // time.
     explicit Media(std::byte *driverInfoPtr = nullptr, const NotifyCallback &openNotifyCallback = {}, const NotifyCallback &closeNotifyCallback = {});
 
-    auto open(const std::string_view name, const FaultTolerantMode mode = FaultTolerantMode::enable);
+    auto open(const std::string_view name, const FaultTolerantMode mode = FaultTolerantMode::enable) -> Error;
     auto format(const std::string_view volumeName, const ThreadX::Ulong storageSize, const ThreadX::Uint sectorPerCluster = 1,
-                const ThreadX::Uint directoryEntriesFat12_16 = 32);
-    auto volume(const std::string_view volumeName);
+                const ThreadX::Uint directoryEntriesFat12_16 = 32) -> Error;
+    auto volume(const std::string_view volumeName) -> Error;
     auto volume() -> ExpectedStr;
-    auto createDir(const std::string_view dirName);
-    auto deleteDir(const std::string_view dirName);
-    auto renameDir(const std::string_view dirName, const std::string_view newName);
-    auto createFile(const std::string_view fileName);
-    auto deleteFile(const std::string_view fileName);
-    auto renameFile(const std::string_view fileName, const std::string_view newFileName);
-    auto defaultDir(const std::string_view newPath);
+    auto createDir(const std::string_view dirName) -> Error;
+    auto deleteDir(const std::string_view dirName) -> Error;
+    auto renameDir(const std::string_view dirName, const std::string_view newName) -> Error;
+    auto createFile(const std::string_view fileName) -> Error;
+    auto deleteFile(const std::string_view fileName) -> Error;
+    auto renameFile(const std::string_view fileName, const std::string_view newFileName) -> Error;
+    auto defaultDir(const std::string_view newPath) -> Error;
     auto defaultDir() -> ExpectedStr;
-    auto localDir(const std::string_view newPath);
+    auto localDir(const std::string_view newPath) -> Error;
     auto localDir() -> ExpectedStr;
-    auto clearLocalDir();
+    auto clearLocalDir() -> Error;
     auto space() -> ExpectedUlong64;
     /// This service is typically called when I/O errors are detected
-    auto abort();
-    auto invalidateCache();
-    auto check();
-    auto flush();
-    auto close();
-    auto name() const;
-    auto writeSector(const ThreadX::Ulong sectorNo, const std::span<std::byte, std::to_underlying(N)> sectorData);
-    auto readSector(const ThreadX::Ulong sectorNo, std::span<std::byte, std::to_underlying(N)> sectorData);
+    auto abort() -> Error;
+    auto invalidateCache() -> Error;
+    auto check() -> Error;
+    auto flush() -> Error;
+    auto close() -> Error;
+    auto name() const -> std::string_view;
+    auto writeSector(const ThreadX::Ulong sectorNo, const std::span<std::byte, std::to_underlying(N)> sectorData) -> Error;
+    auto readSector(const ThreadX::Ulong sectorNo, std::span<std::byte, std::to_underlying(N)> sectorData) -> Error;
 
-    auto driverInfo();
-    auto driverRequest();
-    auto driverStatus(const Error error);
-    auto driverBuffer();
-    auto driverLogicalSector();
-    auto driverSectors();
-    auto driverPhysicalSector();
-    auto driverPhysicalTrack();
-    auto driverWriteProtect(const bool writeProtect = true);
-    auto driverFreeSectorUpdate(const bool freeSectorUpdate = true);
-    auto driverSystemWrite();
-    auto driverDataSectorRead();
-    auto driverSectorType();
+    auto driverInfo() const -> void *;
+    auto driverRequest() const -> MediaDriverRequest;
+    auto driverStatus(const Error error) -> void;
+    auto driverBuffer() const -> ThreadX::Uchar *;
+    auto driverLogicalSector() const -> ThreadX::Ulong;
+    auto driverSectors() const -> ThreadX::Ulong;
+    auto driverPhysicalSector() -> ThreadX::Ulong;
+    auto driverPhysicalTrack() -> ThreadX::Uint;
+    auto driverWriteProtect(const bool writeProtect = true) -> void;
+    auto driverFreeSectorUpdate(const bool freeSectorUpdate = true) -> void;
+    auto driverSystemWrite() const -> bool;
+    auto driverDataSectorRead() const -> bool;
+    auto driverSectorType() const -> MediaSectorType;
 
     virtual void driverCallback() = 0;
 
@@ -114,9 +114,9 @@ class Media : ThreadX::Native::FX_MEDIA, MediaBase
     virtual ~Media();
 
   private:
-    static auto driverCallback(auto mediaPtr);
-    static auto openNotifyCallback(auto mediaPtr);
-    static auto closeNotifyCallback(auto mediaPtr);
+    static auto driverCallback(auto mediaPtr) -> void;
+    static auto openNotifyCallback(auto mediaPtr) -> void;
+    static auto closeNotifyCallback(auto mediaPtr) -> void;
 
 #ifdef FX_ENABLE_FAULT_TOLERANT
     static constexpr ThreadX::Uint m_faultTolerantCacheSize{FX_FAULT_TOLERANT_MAXIMUM_LOG_FILE_SIZE};
@@ -138,13 +138,13 @@ class Media : ThreadX::Native::FX_MEDIA, MediaBase
 };
 
 template <MediaSectorSize N>
-constexpr MediaSectorSize Media<N>::sectorSize()
+constexpr auto Media<N>::sectorSize() -> MediaSectorSize
 {
     return N;
 }
 
 template <MediaSectorSize N>
-auto Media<N>::setFileSystemTime()
+auto Media<N>::setFileSystemTime() -> Error
 {
     auto time{std::chrono::system_clock::to_time_t(std::chrono::system_clock::now())};
     auto localTime{*std::localtime(std::addressof(time))};
@@ -193,7 +193,7 @@ Media<N>::~Media()
 }
 
 template <MediaSectorSize N>
-auto Media<N>::open(const std::string_view name, const FaultTolerantMode mode)
+auto Media<N>::open(const std::string_view name, const FaultTolerantMode mode) -> Error
 {
     using namespace ThreadX::Native;
 
@@ -218,7 +218,7 @@ auto Media<N>::open(const std::string_view name, const FaultTolerantMode mode)
 
 template <MediaSectorSize N>
 auto Media<N>::format(const std::string_view volumeName, const ThreadX::Ulong storageSize, const ThreadX::Uint sectorPerCluster,
-                      const ThreadX::Uint directoryEntriesFat12_16)
+                      const ThreadX::Uint directoryEntriesFat12_16) -> Error
 {
     assert(storageSize % std::to_underlying(N) == 0);
 
@@ -241,7 +241,7 @@ auto Media<N>::format(const std::string_view volumeName, const ThreadX::Ulong st
 }
 
 template <MediaSectorSize N>
-auto Media<N>::volume(const std::string_view volumeName)
+auto Media<N>::volume(const std::string_view volumeName) -> Error
 {
     assert(volumeName.length() < volumNameLength);
     return Error{fx_media_volume_set(this, const_cast<char *>(volumeName.data()))};
@@ -260,43 +260,43 @@ auto Media<N>::volume() -> ExpectedStr
 }
 
 template <MediaSectorSize N>
-auto Media<N>::createDir(const std::string_view dirName)
+auto Media<N>::createDir(const std::string_view dirName) -> Error
 {
     return Error{fx_directory_create(this, const_cast<char *>(dirName.data()))};
 }
 
 template <MediaSectorSize N>
-auto Media<N>::deleteDir(const std::string_view dirName)
+auto Media<N>::deleteDir(const std::string_view dirName) -> Error
 {
     return Error{fx_directory_delete(this, const_cast<char *>(dirName.data()))};
 }
 
 template <MediaSectorSize N>
-auto Media<N>::renameDir(const std::string_view dirName, const std::string_view newName)
+auto Media<N>::renameDir(const std::string_view dirName, const std::string_view newName) -> Error
 {
     return Error{fx_directory_rename(this, const_cast<char *>(dirName.data()), const_cast<char *>(newName.data()))};
 }
 
 template <MediaSectorSize N>
-auto Media<N>::createFile(const std::string_view fileName)
+auto Media<N>::createFile(const std::string_view fileName) -> Error
 {
     return Error{fx_file_create(this, const_cast<char *>(fileName.data()))};
 }
 
 template <MediaSectorSize N>
-auto Media<N>::deleteFile(const std::string_view fileName)
+auto Media<N>::deleteFile(const std::string_view fileName) -> Error
 {
     return Error{fx_file_delete(this, const_cast<char *>(fileName.data()))};
 }
 
 template <MediaSectorSize N>
-auto Media<N>::renameFile(const std::string_view fileName, const std::string_view newFileName)
+auto Media<N>::renameFile(const std::string_view fileName, const std::string_view newFileName) -> Error
 {
     return Error{fx_file_rename(this, const_cast<char *>(fileName.data()), const_cast<char *>(newFileName.data()))};
 }
 
 template <MediaSectorSize N>
-auto Media<N>::defaultDir(const std::string_view newPath)
+auto Media<N>::defaultDir(const std::string_view newPath) -> Error
 {
     return Error{fx_directory_default_set(this, const_cast<char *>(newPath.data()))};
 }
@@ -314,7 +314,7 @@ auto Media<N>::defaultDir() -> ExpectedStr
 }
 
 template <MediaSectorSize N>
-auto Media<N>::localDir(const std::string_view newPath)
+auto Media<N>::localDir(const std::string_view newPath) -> Error
 {
     using namespace ThreadX::Native;
     FX_LOCAL_PATH localPath;
@@ -334,7 +334,7 @@ auto Media<N>::localDir() -> ExpectedStr
 }
 
 template <MediaSectorSize N>
-auto Media<N>::clearLocalDir()
+auto Media<N>::clearLocalDir() -> Error
 {
     return Error{fx_directory_local_path_clear(this)};
 }
@@ -352,124 +352,128 @@ auto Media<N>::space() -> ExpectedUlong64
 }
 
 template <MediaSectorSize N>
-auto Media<N>::abort()
+auto Media<N>::abort() -> Error
 {
     return Error{fx_media_abort(this)};
 }
 
 template <MediaSectorSize N>
-auto Media<N>::invalidateCache()
+auto Media<N>::invalidateCache() -> Error
 {
     return Error{fx_media_cache_invalidate(this)};
 }
 
 template <MediaSectorSize N>
-auto Media<N>::flush()
+auto Media<N>::flush() -> Error
 {
     return Error{fx_media_flush(this)};
 }
 
 template <MediaSectorSize N>
-auto Media<N>::close()
+auto Media<N>::close() -> Error
 {
     return Error{fx_media_close(this)};
 }
 
 template <MediaSectorSize N>
-auto Media<N>::name() const
+auto Media<N>::name() const -> std::string_view
 {
     return std::string_view{fx_media_name};
 }
 
 template <MediaSectorSize N>
-auto Media<N>::writeSector(const ThreadX::Ulong sectorNo, const std::span<std::byte, std::to_underlying(N)> sectorData)
+auto Media<N>::writeSector(const ThreadX::Ulong sectorNo, const std::span<std::byte, std::to_underlying(N)> sectorData) -> Error
 {
     return Error{fx_media_write(this, sectorNo, sectorData.data())};
 }
 
 template <MediaSectorSize N>
-auto Media<N>::readSector(const ThreadX::Ulong sectorNo, std::span<std::byte, std::to_underlying(N)> sectorData)
+auto Media<N>::readSector(const ThreadX::Ulong sectorNo, std::span<std::byte, std::to_underlying(N)> sectorData) -> Error
 {
     return Error{fx_media_read(this, sectorNo, sectorData.data())};
 }
 
 template <MediaSectorSize N>
-auto Media<N>::driverInfo()
+auto Media<N>::driverInfo() const -> void *
 {
     return fx_media_driver_info;
 }
 
 template <MediaSectorSize N>
-auto Media<N>::driverRequest()
+auto Media<N>::driverRequest() const -> MediaDriverRequest
 {
     return MediaDriverRequest{fx_media_driver_request};
 }
 template <MediaSectorSize N>
-auto Media<N>::driverStatus(const Error error)
+auto Media<N>::driverStatus(const Error error) -> void
 {
     fx_media_driver_status = std::to_underlying(error);
 }
 
 template <MediaSectorSize N>
-auto Media<N>::driverBuffer()
+auto Media<N>::driverBuffer() const -> ThreadX::Uchar *
 {
     return fx_media_driver_buffer;
 }
 
 template <MediaSectorSize N>
-auto Media<N>::driverLogicalSector()
+auto Media<N>::driverLogicalSector() const -> ThreadX::Ulong
 {
     return fx_media_driver_logical_sector;
 }
 
 template <MediaSectorSize N>
-auto Media<N>::driverSectors()
+auto Media<N>::driverSectors() const -> ThreadX::Ulong
 {
     return fx_media_driver_sectors;
 }
 
 template <MediaSectorSize N>
-auto Media<N>::driverWriteProtect(const bool writeProtect)
+auto Media<N>::driverWriteProtect(const bool writeProtect) -> void
 {
     fx_media_driver_write_protect = writeProtect;
 }
+
 template <MediaSectorSize N>
-auto Media<N>::driverFreeSectorUpdate(const bool freeSectorUpdate)
+auto Media<N>::driverFreeSectorUpdate(const bool freeSectorUpdate) -> void
 {
     fx_media_driver_free_sector_update = freeSectorUpdate;
 }
+
 template <MediaSectorSize N>
-auto Media<N>::driverSystemWrite()
+auto Media<N>::driverSystemWrite() const -> bool
 {
     return static_cast<bool>(fx_media_driver_system_write);
 }
+
 template <MediaSectorSize N>
-auto Media<N>::driverDataSectorRead()
+auto Media<N>::driverDataSectorRead() const -> bool
 {
     return static_cast<bool>(fx_media_driver_data_sector_read);
 }
+
 template <MediaSectorSize N>
-auto Media<N>::driverSectorType()
+auto Media<N>::driverSectorType() const -> MediaSectorType
 {
     return MediaSectorType{fx_media_driver_sector_type};
 }
 
 template <MediaSectorSize N>
-auto Media<N>::driverCallback(auto mediaPtr)
+auto Media<N>::driverCallback(auto mediaPtr) -> void
 {
     auto &media{static_cast<Media &>(*mediaPtr)};
     media.driverCallback();
 }
 
 template <MediaSectorSize N>
-auto Media<N>::openNotifyCallback(auto mediaPtr)
+auto Media<N>::openNotifyCallback(auto mediaPtr) -> void
 {
     auto &media{static_cast<Media &>(*mediaPtr)};
     media.m_openNotifyCallback(media);
 }
 
 template <MediaSectorSize N>
-auto Media<N>::closeNotifyCallback(auto mediaPtr)
+auto Media<N>::closeNotifyCallback(auto mediaPtr) -> void
 {
     auto &media{static_cast<Media &>(*mediaPtr)};
     media.m_closeNotifyCallback(media);

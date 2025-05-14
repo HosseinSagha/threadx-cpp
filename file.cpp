@@ -12,7 +12,7 @@ File::~File()
     assert(error == Error::success);
 }
 
-File::ExpectedUlong64 File::allocate(const ThreadX::Ulong64 size, const AllocateOption option)
+auto File::allocate(const ThreadX::Ulong64 size, const AllocateOption option) -> ExpectedUlong64
 {
     Error error{};
 
@@ -35,7 +35,7 @@ File::ExpectedUlong64 File::allocate(const ThreadX::Ulong64 size, const Allocate
     return std::unexpected(error);
 }
 
-Error File::truncate(const ThreadX::Ulong64 newSize, const TruncateOption option)
+auto File::truncate(const ThreadX::Ulong64 newSize, const TruncateOption option) -> Error
 {
     if (option == TruncateOption::noRelease)
     {
@@ -47,27 +47,27 @@ Error File::truncate(const ThreadX::Ulong64 newSize, const TruncateOption option
     }
 }
 
-Error File::seek(const ThreadX::Ulong64 offset)
+auto File::seek(const ThreadX::Ulong64 offset) -> Error
 {
     return Error{fx_file_extended_seek(this, offset)};
 }
 
-Error File::relativeSeek(const ThreadX::Ulong64 offset, const SeekFrom from)
+auto File::relativeSeek(const ThreadX::Ulong64 offset, const SeekFrom from) -> Error
 {
     return Error{fx_file_extended_relative_seek(this, offset, std::to_underlying(from))};
 }
 
-Error File::write(const std::span<std::byte> data)
+auto File::write(const std::span<std::byte> data) -> Error
 {
     return Error{fx_file_write(this, data.data(), data.size())};
 }
 
-Error File::write(const std::string_view str)
+auto File::write(const std::string_view str) -> Error
 {
     return Error{fx_file_write(this, const_cast<char *>(str.data()), str.size())};
 }
 
-File::ExpectedUlong File::read(const std::span<std::byte> buffer)
+auto File::read(const std::span<std::byte> buffer) -> ExpectedUlong
 {
     ThreadX::Ulong actualSize{};
     if (Error error{fx_file_read(this, buffer.data(), buffer.size(), std::addressof(actualSize))}; error != Error::success)
@@ -78,7 +78,7 @@ File::ExpectedUlong File::read(const std::span<std::byte> buffer)
     return actualSize;
 }
 
-File::ExpectedUlong File::read(const std::span<std::byte> buffer, const ThreadX::Ulong size)
+auto File::read(const std::span<std::byte> buffer, const ThreadX::Ulong size) -> ExpectedUlong
 {
     assert(size <= buffer.size());
 
@@ -91,7 +91,7 @@ File::ExpectedUlong File::read(const std::span<std::byte> buffer, const ThreadX:
     return actualSize;
 }
 
-void File::writeNotifyCallback(ThreadX::Native::FX_FILE *notifyFilePtr)
+auto File::writeNotifyCallback(ThreadX::Native::FX_FILE *notifyFilePtr) -> void
 {
     auto &file{static_cast<File &>(*notifyFilePtr)};
     file.m_writeNotifyCallback(file);

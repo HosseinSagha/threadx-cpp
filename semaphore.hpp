@@ -22,7 +22,7 @@ class CountingSemaphore final : Native::TX_SEMAPHORE
     CountingSemaphore &operator=(const CountingSemaphore &) = delete;
 
     ///
-    constexpr auto max() const;
+    consteval auto max() const -> Ulong;
 
     /// Constructor
     /// \param name name of the semaphore.
@@ -30,49 +30,49 @@ class CountingSemaphore final : Native::TX_SEMAPHORE
     ~CountingSemaphore();
 
     /// attempts to retrieve an instance (a single count) from the specified counting semaphore.
-    auto acquire();
+    auto acquire() -> Error;
 
     // must be used for calls from initialization, timers, and ISRs
-    auto tryAcquire();
+    auto tryAcquire() -> Error;
 
     template <class Clock, typename Duration>
-    auto tryAcquireUntil(const std::chrono::time_point<Clock, Duration> &time);
+    auto tryAcquireUntil(const std::chrono::time_point<Clock, Duration> &time) -> Error;
 
     /// retrieves an instance (a single count) from the specified counting semaphore.
     /// As a result, the specified semaphore's count is decreased by one.
     /// \param duration
     template <typename Rep, typename Period>
-    auto tryAcquireFor(const std::chrono::duration<Rep, Period> &duration);
+    auto tryAcquireFor(const std::chrono::duration<Rep, Period> &duration) -> Error;
 
     ///  puts a number of instances into the specified counting semaphore, which in reality increments the counting semaphore by
     ///  count value. If the counting semaphore's current value is greater than or equal to the specified ceiling, the instance
     ///  will not be put and a TX_CEILING_EXCEEDED error will be returned.
     /// \param count
-    auto release(Ulong count);
+    auto release(Ulong count) -> Error;
 
     /// puts an instance into the specified counting semaphore, which in reality increments the counting semaphore by
     /// one. If the counting semaphore's current value is greater than or equal to the specified ceiling, the instance
     ///  will not be put and a TX_CEILING_EXCEEDED error will be returned.
-    auto release();
+    auto release() -> Error;
 
     /// places the highest priority thread suspended for an instance of the semaphore at the front of the suspension
     /// list. All other threads remain in the same FIFO order they were suspended in.
-    auto prioritise();
+    auto prioritise() -> Error;
 
     /// returns the name of the semaphore.
-    auto name() const;
+    auto name() const -> std::string_view;
 
     /// returns the current count of the semaphore.
-    auto count() const;
+    auto count() const -> Ulong;
 
   private:
-    static auto releaseNotifyCallback(auto notifySemaphorePtr);
+    static auto releaseNotifyCallback(auto notifySemaphorePtr) -> void;
 
     const NotifyCallback m_releaseNotifyCallback;
 };
 
 template <Ulong Ceiling, Ulong InitialCount>
-constexpr auto CountingSemaphore<Ceiling, InitialCount>::max() const
+consteval auto CountingSemaphore<Ceiling, InitialCount>::max() const -> Ulong
 {
     return Ceiling;
 }
@@ -103,33 +103,33 @@ CountingSemaphore<Ceiling, InitialCount>::~CountingSemaphore()
 }
 
 template <Ulong Ceiling, Ulong InitialCount>
-auto CountingSemaphore<Ceiling, InitialCount>::acquire()
+auto CountingSemaphore<Ceiling, InitialCount>::acquire() -> Error
 {
     return tryAcquireFor(TickTimer::waitForever);
 }
 
 template <Ulong Ceiling, Ulong InitialCount>
-auto CountingSemaphore<Ceiling, InitialCount>::tryAcquire()
+auto CountingSemaphore<Ceiling, InitialCount>::tryAcquire() -> Error
 {
     return tryAcquireFor(TickTimer::noWait);
 }
 
 template <Ulong Ceiling, Ulong InitialCount>
 template <class Clock, typename Duration>
-auto CountingSemaphore<Ceiling, InitialCount>::tryAcquireUntil(const std::chrono::time_point<Clock, Duration> &time)
+auto CountingSemaphore<Ceiling, InitialCount>::tryAcquireUntil(const std::chrono::time_point<Clock, Duration> &time) -> Error
 {
     return tryAcquireFor(time - Clock::now());
 }
 
 template <Ulong Ceiling, Ulong InitialCount>
 template <typename Rep, typename Period>
-auto CountingSemaphore<Ceiling, InitialCount>::tryAcquireFor(const std::chrono::duration<Rep, Period> &duration)
+auto CountingSemaphore<Ceiling, InitialCount>::tryAcquireFor(const std::chrono::duration<Rep, Period> &duration) -> Error
 {
     return Error{tx_semaphore_get(this, TickTimer::ticks(duration))};
 }
 
 template <Ulong Ceiling, Ulong InitialCount>
-auto CountingSemaphore<Ceiling, InitialCount>::release(Ulong count)
+auto CountingSemaphore<Ceiling, InitialCount>::release(Ulong count) -> Error
 {
     while (count > 0)
     {
@@ -145,31 +145,31 @@ auto CountingSemaphore<Ceiling, InitialCount>::release(Ulong count)
 }
 
 template <Ulong Ceiling, Ulong InitialCount>
-auto CountingSemaphore<Ceiling, InitialCount>::release()
+auto CountingSemaphore<Ceiling, InitialCount>::release() -> Error
 {
     return Error{tx_semaphore_ceiling_put(this, Ceiling)};
 }
 
 template <Ulong Ceiling, Ulong InitialCount>
-auto CountingSemaphore<Ceiling, InitialCount>::prioritise()
+auto CountingSemaphore<Ceiling, InitialCount>::prioritise() -> Error
 {
     return Error{tx_semaphore_prioritize(this)};
 }
 
 template <Ulong Ceiling, Ulong InitialCount>
-auto CountingSemaphore<Ceiling, InitialCount>::name() const
+auto CountingSemaphore<Ceiling, InitialCount>::name() const -> std::string_view
 {
     return std::string_view{tx_semaphore_name};
 }
 
 template <Ulong Ceiling, Ulong InitialCount>
-auto CountingSemaphore<Ceiling, InitialCount>::count() const
+auto CountingSemaphore<Ceiling, InitialCount>::count() const -> Ulong
 {
     return tx_semaphore_count;
 }
 
 template <Ulong Ceiling, Ulong InitialCount>
-auto CountingSemaphore<Ceiling, InitialCount>::releaseNotifyCallback(auto notifySemaphorePtr)
+auto CountingSemaphore<Ceiling, InitialCount>::releaseNotifyCallback(auto notifySemaphorePtr) -> void
 {
     auto &semaphore{static_cast<CountingSemaphore &>(*notifySemaphorePtr)};
     semaphore.m_releaseNotifyCallback(semaphore);

@@ -50,12 +50,12 @@ enum class TraceEvent : Ulong
 #endif
 };
 
-inline Ulong operator|(const TraceEvent eventType1, const TraceEvent eventType2)
+inline auto operator|(const TraceEvent eventType1, const TraceEvent eventType2) -> Ulong
 {
     return std::to_underlying(eventType1) | std::to_underlying(eventType2);
 }
 
-inline Ulong operator|(const Ulong eventType1, const TraceEvent eventType2)
+inline auto operator|(const Ulong eventType1, const TraceEvent eventType2) -> Ulong
 {
     return eventType1 | std::to_underlying(eventType2);
 }
@@ -74,21 +74,21 @@ class Trace
     /// \return
     explicit Trace(const Ulong registryEntries);
 
-    static auto eventFilter(const Ulong eventBits);
+    static auto eventFilter(const Ulong eventBits) -> Error;
 
-    static auto eventUnfilter(const Ulong eventBits);
+    static auto eventUnfilter(const Ulong eventBits) -> Error;
 
-    static auto eventFilter(const TraceEvent event);
+    static auto eventFilter(const TraceEvent event) -> Error;
 
-    static auto eventUnfilter(const TraceEvent event);
+    static auto eventUnfilter(const TraceEvent event) -> Error;
 
-    static auto disable();
+    static auto disable() -> Error;
 
-    static auto isrEnterInsert(const Ulong isrID);
+    static auto isrEnterInsert(const Ulong isrID) -> void;
 
-    static auto isrExitInsert(const Ulong isrID);
+    static auto isrExitInsert(const Ulong isrID) -> void;
 
-    static auto userEventInsert(const Ulong eventID, const Ulong infoField1, const Ulong infoField2, const Ulong infoField3, const Ulong infoField4);
+    static auto userEventInsert(const Ulong eventID, const Ulong infoField1, const Ulong infoField2, const Ulong infoField3, const Ulong infoField4) -> Error;
 
   private:
     std::array<Uchar, Size> m_trace{};
@@ -102,49 +102,49 @@ Trace<Size>::Trace(const Ulong registryEntries)
 }
 
 template <Ulong Size>
-auto Trace<Size>::eventFilter(const Ulong eventBits)
+auto Trace<Size>::eventFilter(const Ulong eventBits) -> Error
 {
     return Error{Native::tx_trace_event_filter(eventBits)};
 }
 
 template <Ulong Size>
-auto Trace<Size>::eventUnfilter(const Ulong eventBits)
+auto Trace<Size>::eventUnfilter(const Ulong eventBits) -> Error
 {
     return Error{Native::tx_trace_event_unfilter(eventBits)};
 }
 
 template <Ulong Size>
-auto Trace<Size>::eventFilter(const TraceEvent event)
+auto Trace<Size>::eventFilter(const TraceEvent event) -> Error
 {
     return Error{Native::tx_trace_event_filter(std::to_underlying(event))};
 }
 
 template <Ulong Size>
-auto Trace<Size>::eventUnfilter(const TraceEvent event)
+auto Trace<Size>::eventUnfilter(const TraceEvent event) -> Error
 {
     return Error{Native::tx_trace_event_unfilter(std::to_underlying(event))};
 }
 
 template <Ulong Size>
-auto Trace<Size>::disable()
+auto Trace<Size>::disable() -> Error
 {
     return Error{Native::tx_trace_disable()};
 }
 
 template <Ulong Size>
-auto Trace<Size>::isrEnterInsert(const Ulong isrID)
+auto Trace<Size>::isrEnterInsert(const Ulong isrID) -> void
 {
     Native::tx_trace_isr_enter_insert(isrID);
 }
 
 template <Ulong Size>
-auto Trace<Size>::isrExitInsert(const Ulong isrID)
+auto Trace<Size>::isrExitInsert(const Ulong isrID) -> void
 {
     Native::tx_trace_isr_exit_insert(isrID);
 }
 
 template <Ulong Size>
-auto Trace<Size>::userEventInsert(const Ulong eventID, const Ulong infoField1, const Ulong infoField2, const Ulong infoField3, const Ulong infoField4)
+auto Trace<Size>::userEventInsert(const Ulong eventID, const Ulong infoField1, const Ulong infoField2, const Ulong infoField3, const Ulong infoField4) -> Error
 {
     assert(eventID >= TX_TRACE_USER_EVENT_START and eventID <= TX_TRACE_USER_EVENT_END);
     return Error{Native::tx_trace_user_event_insert(eventID, infoField1, infoField2, infoField3, infoField4)};
@@ -152,7 +152,7 @@ auto Trace<Size>::userEventInsert(const Ulong eventID, const Ulong infoField1, c
 
 using TraceBufFullNotifyCallback = void (*)(void *);
 
-inline auto registerbufFullNotifyCallback(const TraceBufFullNotifyCallback bufferFullNotifyCallback)
+inline auto registerbufFullNotifyCallback(const TraceBufFullNotifyCallback bufferFullNotifyCallback) -> Error
 {
     return Error{Native::tx_trace_buffer_full_notify(bufferFullNotifyCallback)};
 }

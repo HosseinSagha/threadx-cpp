@@ -19,7 +19,7 @@ enum class InheritMode : Uint
 };
 
 /// Mutex for locking access to resources.
-class Mutex final : Native::TX_MUTEX
+class Mutex : Native::TX_MUTEX
 {
   public:
     /// \param inheritMode
@@ -35,38 +35,38 @@ class Mutex final : Native::TX_MUTEX
     /// attempts to obtain exclusive ownership of the specified mutex. If the calling thread already owns the mutex, an
     /// internal counter is incremented and a successful status is returned.
     /// \param duration
-    Error lock();
+    auto lock() -> Error;
 
     // must be used for calls from initialization, timers, and ISRs
-    Error try_lock();
+    auto try_lock() -> Error;
 
     template <class Clock, typename Duration>
-    auto try_lock_until(const std::chrono::time_point<Clock, Duration> &time);
+    auto try_lock_until(const std::chrono::time_point<Clock, Duration> &time) -> Error;
 
     template <typename Rep, typename Period>
-    auto try_lock_for(const std::chrono::duration<Rep, Period> &duration);
+    auto try_lock_for(const std::chrono::duration<Rep, Period> &duration) -> Error;
 
     /// decrements the ownership count of the specified mutex.
     /// If the ownership count is zero, the mutex is made available.
-    Error unlock();
+    auto unlock() -> Error;
 
-    std::string_view name() const;
+    auto name() const -> std::string_view;
 
     /// Places the highest priority thread suspended for ownership of the mutex at the front of the suspension list.
     /// All other threads remain in the same FIFO order they were suspended in.
-    Error prioritise();
+    auto prioritise() -> Error;
 
-    uintptr_t lockingThreadID() const;
+    auto lockingThreadID() const -> uintptr_t;
 };
 
 template <class Clock, typename Duration>
-auto Mutex::try_lock_until(const std::chrono::time_point<Clock, Duration> &time)
+auto Mutex::try_lock_until(const std::chrono::time_point<Clock, Duration> &time) -> Error
 {
     return try_lock_for(time - Clock::now());
 }
 
 template <typename Rep, typename Period>
-auto Mutex::try_lock_for(const std::chrono::duration<Rep, Period> &duration)
+auto Mutex::try_lock_for(const std::chrono::duration<Rep, Period> &duration) -> Error
 {
     return Error{tx_mutex_get(this, TickTimer::ticks(duration))};
 }

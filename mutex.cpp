@@ -22,32 +22,32 @@ Mutex::~Mutex()
     assert(error == Error::success);
 }
 
-Error Mutex::lock()
+auto Mutex::lock() -> Error
 {
     return try_lock_for(TickTimer::waitForever);
 }
 
-Error Mutex::try_lock()
+auto Mutex::try_lock() -> Error
 {
     return try_lock_for(TickTimer::noWait);
 }
 
-Error Mutex::unlock()
+auto Mutex::unlock() -> Error
 {
     return Error{tx_mutex_put(this)};
 }
 
-std::string_view Mutex::name() const
+auto Mutex::name() const -> std::string_view
 {
     return std::string_view{tx_mutex_name};
 }
 
-Error Mutex::prioritise()
+auto Mutex::prioritise() -> Error
 {
     return Error{tx_mutex_prioritize(this)};
 }
 
-uintptr_t Mutex::lockingThreadID() const
+auto Mutex::lockingThreadID() const -> uintptr_t
 {
     return uintptr_t(tx_mutex_owner);
 }

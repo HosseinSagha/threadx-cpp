@@ -41,7 +41,7 @@ enum class TruncateOption
     release
 };
 
-class File final: ThreadX::Native::FX_FILE
+class File final : ThreadX::Native::FX_FILE
 {
   public:
     using ExpectedUlong = std::expected<ThreadX::Ulong, Error>;
@@ -51,17 +51,18 @@ class File final: ThreadX::Native::FX_FILE
     template <MediaSectorSize N>
     explicit File(const std::string_view fileName, Media<N> &media, const OpenOption option = OpenOption::read, const NotifyCallback &writeNotifyCallback = {});
     ~File();
-    ExpectedUlong64 allocate(const ThreadX::Ulong64 size, const AllocateOption option = AllocateOption::strict);
-    Error truncate(const ThreadX::Ulong64 newSize, const TruncateOption option = TruncateOption::noRelease);
-    Error seek(const ThreadX::Ulong64 offset);
-    Error relativeSeek(const ThreadX::Ulong64 offset, const SeekFrom from = SeekFrom::forward);
-    Error write(const std::span<std::byte> data);
-    Error write(const std::string_view str);
-    ExpectedUlong read(const std::span<std::byte> buffer);
-    ExpectedUlong read(const std::span<std::byte> buffer, const ThreadX::Ulong size);
+
+    auto allocate(const ThreadX::Ulong64 size, const AllocateOption option = AllocateOption::strict) -> ExpectedUlong64;
+    auto truncate(const ThreadX::Ulong64 newSize, const TruncateOption option = TruncateOption::noRelease) -> Error;
+    auto seek(const ThreadX::Ulong64 offset) -> Error;
+    auto relativeSeek(const ThreadX::Ulong64 offset, const SeekFrom from = SeekFrom::forward) -> Error;
+    auto write(const std::span<std::byte> data) -> Error;
+    auto write(const std::string_view str) -> Error;
+    auto read(const std::span<std::byte> buffer) -> ExpectedUlong;
+    auto read(const std::span<std::byte> buffer, const ThreadX::Ulong size) -> ExpectedUlong;
 
   private:
-    static void writeNotifyCallback(ThreadX::Native::FX_FILE *notifyFilePtr);
+    static auto writeNotifyCallback(ThreadX::Native::FX_FILE *notifyFilePtr) -> void;
 
     const NotifyCallback m_writeNotifyCallback;
 };

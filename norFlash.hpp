@@ -53,19 +53,19 @@ class NorFlash : ThreadX::Native::LX_NOR_FLASH, NorFlashBase
         NorPhysicalSector physicalSectors[usableSectorsPerBlock];
     };
 
-    static constexpr auto sectorSize();
+    static constexpr auto sectorSize() -> FileX::MediaSectorSize;
     explicit NorFlash(const ThreadX::Ulong storageSize, const ThreadX::Ulong baseAddress = 0);
 
-    auto mediaFormatSize() const;
-    auto open();
-    auto close();
-    auto defragment();
-    auto defragment(const ThreadX::Uint numberOfBlocks);
+    auto mediaFormatSize() const -> ThreadX::Ulong;
+    auto open() -> Error;
+    auto close() -> Error;
+    auto defragment() -> Error;
+    auto defragment(const ThreadX::Uint numberOfBlocks) -> Error;
     // sectorData must be word aligned. Uchar type because media driver pointers are char*.
-    auto readSector(const ThreadX::Ulong logicalSector, std::span<ThreadX::Ulong, norSectorSizeInWord> sectorData);
+    auto readSector(const ThreadX::Ulong logicalSector, std::span<ThreadX::Ulong, norSectorSizeInWord> sectorData) -> Error;
     // sectorData must be word aligned. Uchar type because media driver pointers are char*.
-    auto writeSector(const ThreadX::Ulong logicalSector, const std::span<ThreadX::Ulong, norSectorSizeInWord> sectorData);
-    auto releaseSector(const ThreadX::Ulong logicalSector);
+    auto writeSector(const ThreadX::Ulong logicalSector, const std::span<ThreadX::Ulong, norSectorSizeInWord> sectorData) -> Error;
+    auto releaseSector(const ThreadX::Ulong logicalSector) -> Error;
 
     virtual Error initialiseCallback();
     virtual Error readCallback(ThreadX::Ulong *flashAddress, ThreadX::Ulong *destination, const ThreadX::Ulong words) = 0;
@@ -84,12 +84,14 @@ class NorFlash : ThreadX::Native::LX_NOR_FLASH, NorFlashBase
   private:
     struct DriverCallback
     {
-        static auto initialise(ThreadX::Native::LX_NOR_FLASH *norFlashPtr);
-        static auto read(ThreadX::Native::LX_NOR_FLASH *norFlashPtr, ThreadX::Ulong *flashAddress, ThreadX::Ulong *destination, ThreadX::Ulong words);
-        static auto write(ThreadX::Native::LX_NOR_FLASH *norFlashPtr, ThreadX::Ulong *flashAddress, ThreadX::Ulong *source, ThreadX::Ulong words);
-        static auto eraseBlock(ThreadX::Native::LX_NOR_FLASH *norFlashPtr, ThreadX::Ulong block, ThreadX::Ulong eraseCount);
-        static auto verifyErasedBlock(ThreadX::Native::LX_NOR_FLASH *norFlashPtr, ThreadX::Ulong block);
-        static auto systemError(ThreadX::Native::LX_NOR_FLASH *norFlashPtr, ThreadX::Uint errorCode);
+        static auto initialise(ThreadX::Native::LX_NOR_FLASH *norFlashPtr) -> ThreadX::Uint;
+        static auto read(ThreadX::Native::LX_NOR_FLASH *norFlashPtr, ThreadX::Ulong *flashAddress, ThreadX::Ulong *destination, ThreadX::Ulong words)
+            -> ThreadX::Uint;
+        static auto write(ThreadX::Native::LX_NOR_FLASH *norFlashPtr, ThreadX::Ulong *flashAddress, ThreadX::Ulong *source, ThreadX::Ulong words)
+            -> ThreadX::Uint;
+        static auto eraseBlock(ThreadX::Native::LX_NOR_FLASH *norFlashPtr, ThreadX::Ulong block, ThreadX::Ulong eraseCount) -> ThreadX::Uint;
+        static auto verifyErasedBlock(ThreadX::Native::LX_NOR_FLASH *norFlashPtr, ThreadX::Ulong block) -> ThreadX::Uint;
+        static auto systemError(ThreadX::Native::LX_NOR_FLASH *norFlashPtr, ThreadX::Uint errorCode) -> ThreadX::Uint;
     };
 
     static constexpr ThreadX::Ulong m_blockSize{BlockSectors * norSectorSize};
@@ -101,7 +103,7 @@ class NorFlash : ThreadX::Native::LX_NOR_FLASH, NorFlashBase
 };
 
 template <ThreadX::Uint BlockSectors, ThreadX::Uint CacheSectors>
-constexpr auto NorFlash<BlockSectors, CacheSectors>::sectorSize()
+constexpr auto NorFlash<BlockSectors, CacheSectors>::sectorSize() -> FileX::MediaSectorSize
 {
     return static_cast<FileX::MediaSectorSize>(norSectorSize);
 }
@@ -126,14 +128,14 @@ NorFlash<BlockSectors, CacheSectors>::~NorFlash()
 }
 
 template <ThreadX::Uint BlockSectors, ThreadX::Uint CacheSectors>
-auto NorFlash<BlockSectors, CacheSectors>::mediaFormatSize() const
+auto NorFlash<BlockSectors, CacheSectors>::mediaFormatSize() const -> ThreadX::Ulong
 {
     assert(lx_nor_flash_total_blocks > 1);
     return ThreadX::Ulong{(lx_nor_flash_total_blocks - 1) * (lx_nor_flash_words_per_block * ThreadX::wordSize)};
 }
 
 template <ThreadX::Uint BlockSectors, ThreadX::Uint CacheSectors>
-auto NorFlash<BlockSectors, CacheSectors>::open()
+auto NorFlash<BlockSectors, CacheSectors>::open() -> Error
 {
     Error error{lx_nor_flash_open(this, const_cast<char *>("nor flash"), DriverCallback::initialise)};
     if (error != Error::success)
@@ -150,55 +152,55 @@ auto NorFlash<BlockSectors, CacheSectors>::open()
 }
 
 template <ThreadX::Uint BlockSectors, ThreadX::Uint CacheSectors>
-auto NorFlash<BlockSectors, CacheSectors>::close()
+auto NorFlash<BlockSectors, CacheSectors>::close() -> Error
 {
     return Error{lx_nor_flash_close(this)};
 }
 
 template <ThreadX::Uint BlockSectors, ThreadX::Uint CacheSectors>
-auto NorFlash<BlockSectors, CacheSectors>::defragment()
+auto NorFlash<BlockSectors, CacheSectors>::defragment() -> Error
 {
     return Error{lx_nor_flash_defragment(this)};
 }
 
 template <ThreadX::Uint BlockSectors, ThreadX::Uint CacheSectors>
-auto NorFlash<BlockSectors, CacheSectors>::defragment(const ThreadX::Uint numberOfBlocks)
+auto NorFlash<BlockSectors, CacheSectors>::defragment(const ThreadX::Uint numberOfBlocks) -> Error
 {
     return Error{lx_nor_flash_partial_defragment(this, numberOfBlocks)};
 }
 
 template <ThreadX::Uint BlockSectors, ThreadX::Uint CacheSectors>
-auto NorFlash<BlockSectors, CacheSectors>::readSector(const ThreadX::Ulong logicalSector, std::span<ThreadX::Ulong, norSectorSizeInWord> sectorData)
+auto NorFlash<BlockSectors, CacheSectors>::readSector(const ThreadX::Ulong logicalSector, std::span<ThreadX::Ulong, norSectorSizeInWord> sectorData) -> Error
 {
     return Error{lx_nor_flash_sector_read(this, logicalSector, sectorData.data())};
 }
 
 template <ThreadX::Uint BlockSectors, ThreadX::Uint CacheSectors>
-auto NorFlash<BlockSectors, CacheSectors>::writeSector(const ThreadX::Ulong logicalSector, std::span<ThreadX::Ulong, norSectorSizeInWord> sectorData)
+auto NorFlash<BlockSectors, CacheSectors>::writeSector(const ThreadX::Ulong logicalSector, std::span<ThreadX::Ulong, norSectorSizeInWord> sectorData) -> Error
 {
     return Error{lx_nor_flash_sector_write(this, logicalSector, sectorData.data())};
 }
 
 template <ThreadX::Uint BlockSectors, ThreadX::Uint CacheSectors>
-auto NorFlash<BlockSectors, CacheSectors>::releaseSector(const ThreadX::Ulong logicalSector)
+auto NorFlash<BlockSectors, CacheSectors>::releaseSector(const ThreadX::Ulong logicalSector) -> Error
 {
     return Error{lx_nor_flash_sector_release(this, logicalSector)};
 }
 
 template <ThreadX::Uint BlockSectors, ThreadX::Uint CacheSectors>
-Error NorFlash<BlockSectors, CacheSectors>::initialiseCallback()
+auto NorFlash<BlockSectors, CacheSectors>::initialiseCallback() -> Error
 {
     return Error::success;
 }
 
 template <ThreadX::Uint BlockSectors, ThreadX::Uint CacheSectors>
-Error NorFlash<BlockSectors, CacheSectors>::systemErrorCallback([[maybe_unused]] const ThreadX::Uint errorCode)
+auto NorFlash<BlockSectors, CacheSectors>::systemErrorCallback([[maybe_unused]] const ThreadX::Uint errorCode) -> Error
 {
     return Error::success;
 }
 
 template <ThreadX::Uint BlockSectors, ThreadX::Uint CacheSectors>
-auto NorFlash<BlockSectors, CacheSectors>::DriverCallback::initialise(ThreadX::Native::LX_NOR_FLASH *norFlashPtr)
+auto NorFlash<BlockSectors, CacheSectors>::DriverCallback::initialise(ThreadX::Native::LX_NOR_FLASH *norFlashPtr) -> ThreadX::Uint
 {
     auto &norFlash{static_cast<NorFlash &>(*norFlashPtr)};
 
@@ -218,7 +220,7 @@ auto NorFlash<BlockSectors, CacheSectors>::DriverCallback::initialise(ThreadX::N
 
 template <ThreadX::Uint BlockSectors, ThreadX::Uint CacheSectors>
 auto NorFlash<BlockSectors, CacheSectors>::DriverCallback::read(ThreadX::Native::LX_NOR_FLASH *norFlashPtr, ThreadX::Ulong *flashAddress,
-                                                                ThreadX::Ulong *destination, ThreadX::Ulong words)
+                                                                ThreadX::Ulong *destination, ThreadX::Ulong words) -> ThreadX::Uint
 {
     auto &norFlash{static_cast<NorFlash &>(*norFlashPtr)};
     return std::to_underlying(norFlash.readCallback(flashAddress, destination, words));
@@ -226,7 +228,7 @@ auto NorFlash<BlockSectors, CacheSectors>::DriverCallback::read(ThreadX::Native:
 
 template <ThreadX::Uint BlockSectors, ThreadX::Uint CacheSectors>
 auto NorFlash<BlockSectors, CacheSectors>::DriverCallback::write(ThreadX::Native::LX_NOR_FLASH *norFlashPtr, ThreadX::Ulong *flashAddress,
-                                                                 ThreadX::Ulong *source, ThreadX::Ulong words)
+                                                                 ThreadX::Ulong *source, ThreadX::Ulong words) -> ThreadX::Uint
 {
     auto &norFlash{static_cast<NorFlash &>(*norFlashPtr)};
     return std::to_underlying(norFlash.writeCallback(flashAddress, source, words));
@@ -234,21 +236,21 @@ auto NorFlash<BlockSectors, CacheSectors>::DriverCallback::write(ThreadX::Native
 
 template <ThreadX::Uint BlockSectors, ThreadX::Uint CacheSectors>
 auto NorFlash<BlockSectors, CacheSectors>::DriverCallback::eraseBlock(ThreadX::Native::LX_NOR_FLASH *norFlashPtr, ThreadX::Ulong block,
-                                                                      ThreadX::Ulong eraseCount)
+                                                                      ThreadX::Ulong eraseCount) -> ThreadX::Uint
 {
     auto &norFlash{static_cast<NorFlash &>(*norFlashPtr)};
     return std::to_underlying(norFlash.eraseBlockCallback(block, eraseCount));
 }
 
 template <ThreadX::Uint BlockSectors, ThreadX::Uint CacheSectors>
-auto NorFlash<BlockSectors, CacheSectors>::DriverCallback::verifyErasedBlock(ThreadX::Native::LX_NOR_FLASH *norFlashPtr, ThreadX::Ulong block)
+auto NorFlash<BlockSectors, CacheSectors>::DriverCallback::verifyErasedBlock(ThreadX::Native::LX_NOR_FLASH *norFlashPtr, ThreadX::Ulong block) -> ThreadX::Uint
 {
     auto &norFlash{static_cast<NorFlash &>(*norFlashPtr)};
     return std::to_underlying(norFlash.verifyErasedBlockCallback(block));
 }
 
 template <ThreadX::Uint BlockSectors, ThreadX::Uint CacheSectors>
-auto NorFlash<BlockSectors, CacheSectors>::DriverCallback::systemError(ThreadX::Native::LX_NOR_FLASH *norFlashPtr, ThreadX::Uint errorCode)
+auto NorFlash<BlockSectors, CacheSectors>::DriverCallback::systemError(ThreadX::Native::LX_NOR_FLASH *norFlashPtr, ThreadX::Uint errorCode) -> ThreadX::Uint
 {
     auto &norFlash{static_cast<NorFlash &>(*norFlashPtr)};
     return std::to_underlying(norFlash.systemErrorCallback(errorCode));

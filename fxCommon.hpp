@@ -66,5 +66,5 @@ enum class Error : ThreadX::Uint
     invalidState = FX_INVALID_STATE
 };
 
-constexpr auto defaultSectorSize{MediaSectorSize::halfAKilobyte};
+inline constexpr auto defaultSectorSize{MediaSectorSize::halfAKilobyte};
 } // namespace FileX

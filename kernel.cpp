@@ -1,5 +1,13 @@
 #include "kernel.hpp"
 
+namespace ThreadX
+{
+auto Native::tx_application_define([[maybe_unused]] void *firstUnusedMemory) -> void
+{
+    application();
+}
+} // namespace ThreadX
+
 namespace ThreadX::Kernel
 {
 CriticalSection::CriticalSection()
@@ -12,7 +20,7 @@ CriticalSection::~CriticalSection()
     unlock();
 }
 
-void CriticalSection::lock()
+auto CriticalSection::lock() -> void
 {
     if (not m_locked.test_and_set())
     {
@@ -21,7 +29,7 @@ void CriticalSection::lock()
     }
 }
 
-void CriticalSection::unlock()
+auto CriticalSection::unlock() -> void
 {
     if (m_locked.test())
     {
@@ -30,34 +38,26 @@ void CriticalSection::unlock()
     }
 }
 
-void start()
+auto start() -> void
 {
     Native::tx_kernel_enter();
 }
 
-bool inThread()
+auto inThread() -> bool
 {
     return Native::tx_thread_identify() ? true : false;
 }
 
-bool inIsr()
+auto inIsr() -> bool
 {
     using namespace Native;
     const Ulong systemState{TX_THREAD_GET_SYSTEM_STATE()};
     return systemState != TX_INITIALIZE_IS_FINISHED and systemState < TX_INITIALIZE_IN_PROGRESS;
 }
 
-State state()
+auto state() -> State
 {
     using namespace Native;
     return (TX_THREAD_GET_SYSTEM_STATE() < TX_INITIALIZE_IN_PROGRESS) ? State::running : State::uninitialised;
 }
 }; // namespace ThreadX::Kernel
-
-namespace ThreadX
-{
-void Native::tx_application_define([[maybe_unused]] void *firstUnusedMemory)
-{
-    application();
-}
-} // namespace ThreadX
