@@ -12,6 +12,10 @@ auto id() -> ID;
 /// relinquishes processor control to other ready-to-run threads at the same or higher priority
 auto yield() -> void;
 
+auto terminate() -> Error;
+
+auto suspend() -> Error;
+
 template <class Clock, typename Duration>
 auto sleepUntil(const std::chrono::time_point<Clock, Duration> &time) -> Error
 {
