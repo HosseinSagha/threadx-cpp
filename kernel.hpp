@@ -45,12 +45,12 @@ auto start() -> void;
 
 ///
 /// \return true if it is called in a thread
-auto inThread() -> bool;
+[[nodiscard]] auto inThread() -> bool;
 
 /// Determines if the current execution context is inside an interrupt service routine.
 /// \return true if the current execution context is ISR, false otherwise
 
-auto inIsr() -> bool;
+[[nodiscard]] auto inIsr() -> bool;
 
-auto state() -> State;
+[[nodiscard]] auto state() -> State;
 }; // namespace ThreadX::Kernel

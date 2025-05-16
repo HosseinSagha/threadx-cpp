@@ -121,7 +121,7 @@ auto operator==(const Allocator<T> &lhs, const Allocator<U> &rhs) -> bool
     return std::addressof(lhs.m_pool) == std::addressof(rhs.m_pool) and T::value_type == U::value_type;
 }
 
-// TODO: Remove this when C++26 is available
+// TODO: Remove this when C++26 definition is available
 template <class Alloc>
 concept SimpleAllocator = requires(Alloc alloc, std::size_t n) {
     { *alloc.allocate(n) };
