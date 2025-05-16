@@ -52,11 +52,11 @@ FetchContent_Declare(threadx
                      SYSTEM)
 FetchContent_Declare(filex
                      GIT_REPOSITORY ${THREADX_SUBDIR}/filex.git
-                     GIT_TAG ${THREADX_VER}
+                     GIT_TAG ${FILEX_VER}
                      SYSTEM)
 FetchContent_Declare(levelx
                      GIT_REPOSITORY ${THREADX_SUBDIR}/levelx.git
-                     GIT_TAG ${THREADX_VER}
+                     GIT_TAG ${LEVELX_VER}
                      SYSTEM)
 
 set(TX_USER_FILE "../tx_user.h")
