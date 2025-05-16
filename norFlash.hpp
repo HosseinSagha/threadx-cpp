@@ -56,7 +56,7 @@ class NorFlash : ThreadX::Native::LX_NOR_FLASH, NorFlashBase
     static constexpr auto sectorSize() -> FileX::MediaSectorSize;
     explicit NorFlash(const ThreadX::Ulong storageSize, const ThreadX::Ulong baseAddress = 0);
 
-    auto mediaFormatSize() const -> ThreadX::Ulong;
+    [[nodiscard]] auto mediaFormatSize() const -> ThreadX::Ulong;
     auto open() -> Error;
     auto close() -> Error;
     auto defragment() -> Error;

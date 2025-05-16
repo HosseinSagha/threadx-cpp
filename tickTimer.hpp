@@ -41,10 +41,10 @@ class TickTimer final : Native::TX_TIMER
     static constexpr Duration waitForever{0xFFFFFFFFUL};
 
     template <typename Rep, typename Period>
-    static constexpr auto ticks(const std::chrono::duration<Rep, Period> &duration) -> Ulong;
+    [[nodiscard]] static constexpr auto ticks(const std::chrono::duration<Rep, Period> &duration) -> Ulong;
 
     /// returns the internal tick count.
-    static auto now() -> TimePoint;
+    [[nodiscard]] static auto now() -> TimePoint;
 
     /// Constructor
     // ID zero means no callback and therefore passed callbackID never matches timer objects with no callback
@@ -84,9 +84,9 @@ class TickTimer final : Native::TX_TIMER
     /// Deactivate application timer
     auto deactivate() -> Error;
 
-    auto id() const -> size_t;
+    [[nodiscard]] auto id() const -> size_t;
 
-    auto name() const -> std::string_view;
+    [[nodiscard]] auto name() const -> std::string_view;
 
   private:
     static auto expirationCallback(const Ulong timerPtr) -> void;

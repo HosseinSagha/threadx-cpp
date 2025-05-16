@@ -61,7 +61,7 @@ class Media : ThreadX::Native::FX_MEDIA, MediaBase
     Media(const Media &) = delete;
     Media &operator=(const Media &) = delete;
 
-    static consteval auto sectorSize() -> MediaSectorSize;
+    [[nodiscard]] static consteval auto sectorSize() -> MediaSectorSize;
     static auto setFileSystemTime() -> Error;
     // Once initialized by this constructor, the application should call fx_system_date_set and fx_system_time_set to start with an accurate system date and
     // time.
@@ -71,7 +71,7 @@ class Media : ThreadX::Native::FX_MEDIA, MediaBase
     auto format(const std::string_view volumeName, const ThreadX::Ulong storageSize, const ThreadX::Uint sectorPerCluster = 1,
                 const ThreadX::Uint directoryEntriesFat12_16 = 32) -> Error;
     auto volume(const std::string_view volumeName) -> Error;
-    auto volume() -> ExpectedStr;
+    [[nodiscard]] auto volume() -> ExpectedStr;
     auto createDir(const std::string_view dirName) -> Error;
     auto deleteDir(const std::string_view dirName) -> Error;
     auto renameDir(const std::string_view dirName, const std::string_view newName) -> Error;
@@ -79,18 +79,18 @@ class Media : ThreadX::Native::FX_MEDIA, MediaBase
     auto deleteFile(const std::string_view fileName) -> Error;
     auto renameFile(const std::string_view fileName, const std::string_view newFileName) -> Error;
     auto defaultDir(const std::string_view newPath) -> Error;
-    auto defaultDir() -> ExpectedStr;
+    [[nodiscard]] auto defaultDir() -> ExpectedStr;
     auto localDir(const std::string_view newPath) -> Error;
-    auto localDir() -> ExpectedStr;
+    [[nodiscard]] auto localDir() -> ExpectedStr;
     auto clearLocalDir() -> Error;
-    auto space() -> ExpectedUlong64;
+    [[nodiscard]] auto space() -> ExpectedUlong64;
     /// This service is typically called when I/O errors are detected
     auto abort() -> Error;
     auto invalidateCache() -> Error;
     auto check() -> Error;
     auto flush() -> Error;
     auto close() -> Error;
-    auto name() const -> std::string_view;
+    [[nodiscard]] auto name() const -> std::string_view;
     auto writeSector(const ThreadX::Ulong sectorNo, const std::span<std::byte, std::to_underlying(N)> sectorData) -> Error;
     auto readSector(const ThreadX::Ulong sectorNo, std::span<std::byte, std::to_underlying(N)> sectorData) -> Error;
 

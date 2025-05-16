@@ -14,7 +14,7 @@ class Allocator final
 
     Allocator &operator=(const Allocator &) = delete;
 
-    static consteval auto isBytePoolAllocator() -> bool;
+    [[nodiscard]] static consteval auto isBytePoolAllocator() -> bool;
 
     explicit Allocator(Pool &pool);
 

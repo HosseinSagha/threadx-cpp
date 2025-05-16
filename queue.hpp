@@ -26,7 +26,7 @@ class Queue final : Native::TX_QUEUE
     Queue(const Queue &) = delete;
     Queue &operator=(const Queue &) = delete;
 
-    static consteval auto messageSize() -> size_t;
+    [[nodiscard]] static consteval auto messageSize() -> size_t;
 
     /// Constructor
     /// \param name name of queue
@@ -86,7 +86,7 @@ class Queue final : Native::TX_QUEUE
     /// delete all messages
     auto flush() -> Error;
 
-    auto name() const -> std::string_view;
+    [[nodiscard]] auto name() const -> std::string_view;
 
   private:
     static auto sendNotifyCallback(auto queuePtr) -> void;

@@ -50,12 +50,12 @@ enum class TraceEvent : Ulong
 #endif
 };
 
-inline auto operator|(const TraceEvent eventType1, const TraceEvent eventType2) -> Ulong
+[[nodiscard]] inline auto operator|(const TraceEvent eventType1, const TraceEvent eventType2) -> Ulong
 {
     return std::to_underlying(eventType1) | std::to_underlying(eventType2);
 }
 
-inline auto operator|(const Ulong eventType1, const TraceEvent eventType2) -> Ulong
+[[nodiscard]] inline auto operator|(const Ulong eventType1, const TraceEvent eventType2) -> Ulong
 {
     return eventType1 | std::to_underlying(eventType2);
 }

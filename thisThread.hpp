@@ -7,7 +7,7 @@ namespace ThreadX::ThisThread
 {
 using ID = uintptr_t;
 
-auto id() -> ID;
+[[nodiscard]] auto id() -> ID;
 
 /// relinquishes processor control to other ready-to-run threads at the same or higher priority
 auto yield() -> void;
@@ -16,7 +16,7 @@ auto terminate() -> Error;
 
 auto suspend() -> Error;
 
-auto name() -> std::string_view;
+[[nodiscard]] auto name() -> std::string_view;
 
 template <class Clock, typename Duration>
 auto sleepUntil(const std::chrono::time_point<Clock, Duration> &time) -> Error

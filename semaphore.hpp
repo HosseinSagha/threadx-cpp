@@ -22,7 +22,7 @@ class CountingSemaphore final : Native::TX_SEMAPHORE
     CountingSemaphore &operator=(const CountingSemaphore &) = delete;
 
     ///
-    consteval auto max() const -> Ulong;
+    [[nodiscard]] consteval auto max() const -> Ulong;
 
     /// Constructor
     /// \param name name of the semaphore.
@@ -60,10 +60,10 @@ class CountingSemaphore final : Native::TX_SEMAPHORE
     auto prioritise() -> Error;
 
     /// returns the name of the semaphore.
-    auto name() const -> std::string_view;
+    [[nodiscard]] auto name() const -> std::string_view;
 
     /// returns the current count of the semaphore.
-    auto count() const -> Ulong;
+    [[nodiscard]] auto count() const -> Ulong;
 
   private:
     static auto releaseNotifyCallback(auto notifySemaphorePtr) -> void;

@@ -50,13 +50,13 @@ class Mutex final : Native::TX_MUTEX
     /// If the ownership count is zero, the mutex is made available.
     auto unlock() -> Error;
 
-    auto name() const -> std::string_view;
+    [[nodiscard]] auto name() const -> std::string_view;
 
     /// Places the highest priority thread suspended for ownership of the mutex at the front of the suspension list.
     /// All other threads remain in the same FIFO order they were suspended in.
     auto prioritise() -> Error;
 
-    auto lockingThreadID() const -> uintptr_t;
+    [[nodiscard]] auto lockingThreadID() const -> uintptr_t;
 };
 
 template <class Clock, typename Duration>

@@ -104,38 +104,38 @@ class Thread final : Native::TX_THREAD
     /// If the wait is aborted, a Error::waitAborted is returned from the service that the thread was waiting on.
     auto abortWait() -> Error;
 
-    auto id() const -> ThisThread::ID;
+    [[nodiscard]] auto id() const -> ThisThread::ID;
 
-    auto name() const -> std::string_view;
+    [[nodiscard]] auto name() const -> std::string_view;
 
-    auto state() const -> ThreadState;
+    [[nodiscard]] auto state() const -> ThreadState;
 
     /// Changes preemption-threshold of application thread.
     /// \param preempt
     /// \return
     auto preemption(const auto preempt) -> Error;
 
-    auto preemption() const -> Uint;
+    [[nodiscard]] auto preemption() const -> Uint;
 
     /// Change priority of application thread.
     /// \param priority
     /// \return
     auto priority(const auto priority) -> Error;
 
-    auto priority() const -> Uint;
+    [[nodiscard]] auto priority() const -> Uint;
     /// Changes time-slice of application thread.
     /// Using preemption-threshold disables time-slicing for the specified thread.
     /// \param timeSlice
     /// \return
     auto timeSlice(const auto timeSlice) -> Error;
 
-    auto timeSlice() const -> Ulong;
+    [[nodiscard]] auto timeSlice() const -> Ulong;
 
     auto join() -> void;
 
-    auto joinable() const -> bool;
+    [[nodiscard]] auto joinable() const -> bool;
 
-    auto stackInfo() const -> StackInfo;
+    [[nodiscard]] auto stackInfo() const -> StackInfo;
 
   private:
     static auto entryFunction(Ulong thisPtr) -> void;

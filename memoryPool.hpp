@@ -19,7 +19,7 @@ class BytePool final : Native::TX_BYTE_POOL
     template <class Pool, typename T>
     friend class Allocator;
 
-    static consteval auto isBytePool() -> bool;
+    [[nodiscard]] static consteval auto isBytePool() -> bool;
 
     explicit BytePool(const std::string_view name);
     ~BytePool();
@@ -27,7 +27,7 @@ class BytePool final : Native::TX_BYTE_POOL
     /// Places the highest priority thread suspended for memory on this pool at the front of the suspension list.
     /// All other threads remain in the same FIFO order they were suspended in.
     auto prioritise() -> Error;
-    auto name() const -> std::string_view;
+    [[nodiscard]] auto name() const -> std::string_view;
 
   private:
     std::array<Ulong, Size / wordSize> m_pool{}; // Ulong alignment
@@ -70,8 +70,8 @@ template <Ulong Blocks, Ulong BlockSize>
 class BlockPool final : Native::TX_BLOCK_POOL
 {
   public:
-    static consteval auto blockSize() -> Ulong;
-    static consteval auto isBytePool() -> bool;
+    [[nodiscard]] static consteval auto blockSize() -> Ulong;
+    [[nodiscard]] static consteval auto isBytePool() -> bool;
 
     /// block memory pool from which to allocate the thread stacks and queues.
     /// total blocks = (total bytes) / (block size + sizeof(uintptr_t))
@@ -81,7 +81,7 @@ class BlockPool final : Native::TX_BLOCK_POOL
     /// Places the highest priority thread suspended for memory on this pool at the front of the suspension list.
     /// All other threads remain in the same FIFO order they were suspended in.
     auto prioritise() -> Error;
-    auto name() const -> std::string_view;
+    [[nodiscard]] auto name() const -> std::string_view;
 
   private:
     static constexpr Ulong Size{Blocks * (BlockSize + sizeof(uintptr_t))};
