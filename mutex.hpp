@@ -19,7 +19,7 @@ enum class InheritMode : Uint
 };
 
 /// Mutex for locking access to resources.
-class Mutex : Native::TX_MUTEX
+class Mutex final : Native::TX_MUTEX
 {
   public:
     /// \param inheritMode

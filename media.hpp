@@ -61,7 +61,7 @@ class Media : ThreadX::Native::FX_MEDIA, MediaBase
     Media(const Media &) = delete;
     Media &operator=(const Media &) = delete;
 
-    static constexpr auto sectorSize() -> MediaSectorSize;
+    static consteval auto sectorSize() -> MediaSectorSize;
     static auto setFileSystemTime() -> Error;
     // Once initialized by this constructor, the application should call fx_system_date_set and fx_system_time_set to start with an accurate system date and
     // time.
@@ -138,7 +138,7 @@ class Media : ThreadX::Native::FX_MEDIA, MediaBase
 };
 
 template <MediaSectorSize N>
-constexpr auto Media<N>::sectorSize() -> MediaSectorSize
+consteval auto Media<N>::sectorSize() -> MediaSectorSize
 {
     return N;
 }

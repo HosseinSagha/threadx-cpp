@@ -1,7 +1,7 @@
 #pragma once
 
+#include "allocator.hpp"
 #include "kernel.hpp"
-#include "memoryPool.hpp"
 #include "semaphore.hpp"
 #include "thisThread.hpp"
 #include "tickTimer.hpp"
@@ -46,10 +46,11 @@ inline constexpr Uint defaultPriority{16}; ///
 inline constexpr Ulong noTimeSlice{};
 inline constexpr Ulong minimumStackSize{TX_MINIMUM_STACK};
 
-template <class Pool>
-class Thread : Native::TX_THREAD, Allocation<Pool>
+template <SimpleAllocator Allocator>
+class Thread final : Native::TX_THREAD
 {
   public:
+    using RunCallback = std::function<void()>;
     using ErrorCallback = std::function<void(Thread &)>;
     using NotifyCallback = std::function<void(Thread &, const ThreadNotifyCondition)>;
     using StackInfo = struct
@@ -69,21 +70,16 @@ class Thread : Native::TX_THREAD, Allocation<Pool>
     static auto registerStackErrorNotifyCallback(const ErrorCallback &stackErrorNotifyCallback) -> Error;
 
     /// Constructor
-    /// \param pool
     /// \param stackSize
     /// \param priority
     /// \param preamptionThresh
     /// \param timeSlice
     /// \param startType
-    explicit Thread(const std::string_view name, Pool &pool, const Ulong stackSize = minimumStackSize, const NotifyCallback &entryExitNotifyCallback = {},
-                    const Uint priority = defaultPriority, const Uint preamptionThresh = defaultPriority, const Ulong timeSlice = noTimeSlice,
-                    const ThreadStartType startType = ThreadStartType::autoStart)
-        requires(std::is_base_of_v<BytePoolBase, Pool>);
+    explicit Thread(const std::string_view name, Allocator &allocator, const RunCallback &runCallback, const Ulong stackSize = minimumStackSize,
+                    const NotifyCallback &entryExitNotifyCallback = {}, const Uint priority = defaultPriority, const Uint preamptionThresh = defaultPriority,
+                    const Ulong timeSlice = noTimeSlice, const ThreadStartType startType = ThreadStartType::autoStart);
 
-    explicit Thread(const std::string_view name, Pool &pool, const NotifyCallback &entryExitNotifyCallback = {}, const Uint priority = defaultPriority,
-                    const Uint preamptionThresh = defaultPriority, const Ulong timeSlice = noTimeSlice,
-                    const ThreadStartType startType = ThreadStartType::autoStart)
-        requires(std::is_base_of_v<BlockPoolBase, Pool>);
+    ~Thread();
 
     /// resumes or prepares for execution a thread that was previously suspended by a suspend() call.
     /// In addition, this service resumes threads that were created without an automatic start.
@@ -141,27 +137,21 @@ class Thread : Native::TX_THREAD, Allocation<Pool>
 
     auto stackInfo() const -> StackInfo;
 
-  protected:
-    ~Thread();
-
   private:
     static auto entryFunction(Ulong thisPtr) -> void;
     static auto stackErrorNotifyCallback(Native::TX_THREAD *const threadPtr) -> void;
     static auto entryExitNotifyCallback(auto *const threadPtr, const auto condition) -> void;
 
-    auto init(const std::string_view name, const ThreadX::Ulong stackSize, const Uint priority, const Uint preamptionThresh, const Ulong timeSlice,
-              const ThreadStartType startType) -> void;
-
-    virtual void entryCallback() = 0;
-
     static inline ErrorCallback m_stackErrorNotifyCallback;
 
+    Allocator &m_allocator;
+    const RunCallback m_runCallback;
     const NotifyCallback m_entryExitNotifyCallback;
     BinarySemaphore<> *m_exitSignalPtr{};
 }; // namespace ThreadX
 
-template <class Pool>
-auto Thread<Pool>::registerStackErrorNotifyCallback(const ErrorCallback &stackErrorNotifyCallback) -> Error
+template <SimpleAllocator Allocator>
+auto Thread<Allocator>::registerStackErrorNotifyCallback(const ErrorCallback &stackErrorNotifyCallback) -> Error
 {
     Error error{tx_thread_stack_error_notify(stackErrorNotifyCallback ? Thread::stackErrorNotifyCallback : nullptr)};
     if (error == Error::success)
@@ -172,67 +162,59 @@ auto Thread<Pool>::registerStackErrorNotifyCallback(const ErrorCallback &stackEr
     return error;
 }
 
-template <class Pool>
-Thread<Pool>::Thread(const std::string_view name, Pool &pool, const Ulong stackSize, const NotifyCallback &entryExitNotifyCallback, const Uint priority,
-                     const Uint preamptionThresh, const Ulong timeSlice, const ThreadStartType startType)
-    requires(std::is_base_of_v<BytePoolBase, Pool>)
-    : Native::TX_THREAD{}, Allocation<Pool>{pool, stackSize}, m_entryExitNotifyCallback{entryExitNotifyCallback}
+template <SimpleAllocator Allocator>
+Thread<Allocator>::Thread(const std::string_view name, Allocator &allocator, const RunCallback &runCallback, const Ulong stackSize,
+                          const NotifyCallback &entryExitNotifyCallback, const Uint priority, const Uint preamptionThresh, const Ulong timeSlice,
+                          const ThreadStartType startType)
+    : Native::TX_THREAD{}, m_allocator{allocator}, m_runCallback{runCallback}, m_entryExitNotifyCallback{entryExitNotifyCallback}
 {
-    init(name, stackSize, priority, preamptionThresh, timeSlice, startType);
-}
+    if (allocator.isBytePoolAllocator())
+    {
+        assert(not Allocator::isBytePoolAllocator() or (stackSize % sizeof(typename Allocator::value_type)) == 0);
+    }
 
-template <class Pool>
-Thread<Pool>::Thread(const std::string_view name, Pool &pool, const NotifyCallback &entryExitNotifyCallback, const Uint priority, const Uint preamptionThresh,
-                     const Ulong timeSlice, const ThreadStartType startType)
-    requires(std::is_base_of_v<BlockPoolBase, Pool>)
-    : Native::TX_THREAD{}, Allocation<Pool>{pool}, m_entryExitNotifyCallback{entryExitNotifyCallback}
-{
-    init(name, pool.blockSize(), priority, preamptionThresh, timeSlice, startType);
-}
-
-template <class Pool>
-auto Thread<Pool>::init(const std::string_view name, const ThreadX::Ulong stackSize, const Uint priority, const Uint preamptionThresh, const Ulong timeSlice,
-                        const ThreadStartType startType) -> void
-{
     using namespace Native;
-    [[maybe_unused]] Error error{tx_thread_create(this, const_cast<char *>(name.data()), entryFunction, reinterpret_cast<Ulong>(this), Allocation<Pool>::allocationPtr(),
-                                                  stackSize, priority, preamptionThresh, timeSlice, std::to_underlying(startType))};
+    [[maybe_unused]] Error error{tx_thread_create(this, const_cast<char *>(name.data()), entryFunction, reinterpret_cast<Ulong>(this),
+                                                  m_allocator.allocate(stackSize / sizeof(typename Allocator::value_type)), stackSize, priority,
+                                                  preamptionThresh, timeSlice, std::to_underlying(startType))};
     assert(error == Error::success);
 
     error = Error{tx_thread_entry_exit_notify(this, Thread::entryExitNotifyCallback)};
     assert(error == Error::success);
 }
 
-template <class Pool>
-Thread<Pool>::~Thread()
+template <SimpleAllocator Allocator>
+Thread<Allocator>::~Thread()
 {
     [[maybe_unused]] Error error{tx_thread_terminate(this)};
     assert(error == Error::success);
 
     error = Error{tx_thread_delete(this)};
     assert(error == Error::success);
+
+    m_allocator.deallocate(static_cast<Allocator::value_type *>(tx_thread_stack_start)); // todo stack_start may be different
 }
 
-template <class Pool>
-auto Thread<Pool>::resume() -> Error
+template <SimpleAllocator Allocator>
+auto Thread<Allocator>::resume() -> Error
 {
     return Error{tx_thread_resume(this)};
 }
 
-template <class Pool>
-auto Thread<Pool>::suspend() -> Error
+template <SimpleAllocator Allocator>
+auto Thread<Allocator>::suspend() -> Error
 {
     return Error{tx_thread_suspend(this)};
 }
 
-template <class Pool>
-auto Thread<Pool>::reset() -> Error
+template <SimpleAllocator Allocator>
+auto Thread<Allocator>::reset() -> Error
 {
     return Error{tx_thread_reset(this)};
 }
 
-template <class Pool>
-auto Thread<Pool>::restart() -> Error
+template <SimpleAllocator Allocator>
+auto Thread<Allocator>::restart() -> Error
 {
     if (auto error = Error{tx_thread_reset(this)}; error != Error::success)
     {
@@ -242,77 +224,77 @@ auto Thread<Pool>::restart() -> Error
     return Error{tx_thread_resume(this)};
 }
 
-template <class Pool>
-auto Thread<Pool>::terminate() -> Error
+template <SimpleAllocator Allocator>
+auto Thread<Allocator>::terminate() -> Error
 {
     return Error{tx_thread_terminate(this)};
 }
 
-template <class Pool>
-auto Thread<Pool>::abortWait() -> Error
+template <SimpleAllocator Allocator>
+auto Thread<Allocator>::abortWait() -> Error
 {
     return Error{tx_thread_wait_abort(this)};
 }
 
-template <class Pool>
-auto Thread<Pool>::id() const -> ThisThread::ID
+template <SimpleAllocator Allocator>
+auto Thread<Allocator>::id() const -> ThisThread::ID
 {
     return ThisThread::ID(static_cast<const Native::TX_THREAD *>(this));
 }
 
-template <class Pool>
-auto Thread<Pool>::name() const -> std::string_view
+template <SimpleAllocator Allocator>
+auto Thread<Allocator>::name() const -> std::string_view
 {
     return std::string_view{tx_thread_name};
 }
 
-template <class Pool>
-auto Thread<Pool>::state() const -> ThreadState
+template <SimpleAllocator Allocator>
+auto Thread<Allocator>::state() const -> ThreadState
 {
     return ThreadState{tx_thread_state};
 }
 
-template <class Pool>
-auto Thread<Pool>::preemption(const auto preempt) -> Error
+template <SimpleAllocator Allocator>
+auto Thread<Allocator>::preemption(const auto preempt) -> Error
 {
     Uint oldPreempt{};
     return Error{tx_thread_preemption_change(this, preempt, std::addressof(oldPreempt))};
 }
 
-template <class Pool>
-auto Thread<Pool>::preemption() const -> Uint
+template <SimpleAllocator Allocator>
+auto Thread<Allocator>::preemption() const -> Uint
 {
     return tx_thread_user_preempt_threshold;
 }
 
-template <class Pool>
-auto Thread<Pool>::priority(const auto priority) -> Error
+template <SimpleAllocator Allocator>
+auto Thread<Allocator>::priority(const auto priority) -> Error
 {
     Uint oldPriority;
     return Error{tx_thread_priority_change(this, priority, std::addressof(oldPriority))};
 }
 
-template <class Pool>
-auto Thread<Pool>::priority() const -> Uint
+template <SimpleAllocator Allocator>
+auto Thread<Allocator>::priority() const -> Uint
 {
     return tx_thread_user_priority;
 }
 
-template <class Pool>
-auto Thread<Pool>::timeSlice(const auto timeSlice) -> Error
+template <SimpleAllocator Allocator>
+auto Thread<Allocator>::timeSlice(const auto timeSlice) -> Error
 {
     Ulong oldTimeSlice;
     return Error{tx_thread_time_slice_change(this, timeSlice, std::addressof(oldTimeSlice))};
 }
 
-template <class Pool>
-auto Thread<Pool>::timeSlice() const -> Ulong
+template <SimpleAllocator Allocator>
+auto Thread<Allocator>::timeSlice() const -> Ulong
 {
     return tx_thread_new_time_slice;
 }
 
-template <class Pool>
-auto Thread<Pool>::join() -> void
+template <SimpleAllocator Allocator>
+auto Thread<Allocator>::join() -> void
 {
     assert(not m_exitSignalPtr);
     BinarySemaphore exitSignal("join");
@@ -334,16 +316,16 @@ auto Thread<Pool>::join() -> void
     m_exitSignalPtr = nullptr;
 }
 
-template <class Pool>
-auto Thread<Pool>::joinable() const -> bool
+template <SimpleAllocator Allocator>
+auto Thread<Allocator>::joinable() const -> bool
 {
     // wait on itself resource deadlock and wait on finished thread.
     auto threadState{state()};
     return id() != ThisThread::id() and threadState != ThreadState::completed and threadState != ThreadState::terminated;
 }
 
-template <class Pool>
-auto Thread<Pool>::stackInfo() const -> StackInfo
+template <SimpleAllocator Allocator>
+auto Thread<Allocator>::stackInfo() const -> StackInfo
 {
     return StackInfo{.size = tx_thread_stack_size,
                      .used = uintptr_t(tx_thread_stack_end) - uintptr_t(tx_thread_stack_ptr) + 1,
@@ -352,21 +334,21 @@ auto Thread<Pool>::stackInfo() const -> StackInfo
                                        tx_thread_stack_size}; // As a rule of thumb, keep this below 70%
 }
 
-template <class Pool>
-auto Thread<Pool>::entryFunction(Ulong thisPtr) -> void
+template <SimpleAllocator Allocator>
+auto Thread<Allocator>::entryFunction(Ulong thisPtr) -> void
 {
-    reinterpret_cast<Thread *>(thisPtr)->entryCallback();
+    reinterpret_cast<Thread *>(thisPtr)->m_runCallback();
 }
 
-template <class Pool>
-auto Thread<Pool>::stackErrorNotifyCallback(Native::TX_THREAD *const threadPtr) -> void
+template <SimpleAllocator Allocator>
+auto Thread<Allocator>::stackErrorNotifyCallback(Native::TX_THREAD *const threadPtr) -> void
 {
     auto &thread{static_cast<Thread &>(*threadPtr)};
     thread.m_stackErrorNotifyCallback(thread);
 }
 
-template <class Pool>
-auto Thread<Pool>::entryExitNotifyCallback(auto *const threadPtr, const auto condition) -> void
+template <SimpleAllocator Allocator>
+auto Thread<Allocator>::entryExitNotifyCallback(auto *const threadPtr, const auto condition) -> void
 {
     auto &thread{static_cast<Thread &>(*threadPtr)};
     auto notifyCondition{ThreadNotifyCondition{condition}};

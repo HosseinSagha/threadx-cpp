@@ -1,5 +1,4 @@
 #include "thisThread.hpp"
-#include <utility>
 
 namespace ThreadX::ThisThread
 {
@@ -21,5 +20,10 @@ auto terminate() -> Error
 auto suspend() -> Error
 {
     return Error{tx_thread_suspend(Native::tx_thread_identify())};
+}
+
+auto name() -> std::string_view
+{
+    return std::string_view{Native::tx_thread_identify()->tx_thread_name};
 }
 } // namespace ThreadX::ThisThread

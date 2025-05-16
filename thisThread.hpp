@@ -16,6 +16,8 @@ auto terminate() -> Error;
 
 auto suspend() -> Error;
 
+auto name() -> std::string_view;
+
 template <class Clock, typename Duration>
 auto sleepUntil(const std::chrono::time_point<Clock, Duration> &time) -> Error
 {
