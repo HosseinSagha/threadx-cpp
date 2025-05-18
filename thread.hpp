@@ -42,7 +42,7 @@ enum class ThreadNotifyCondition : Uint
     exit
 };
 
-inline constexpr Uint defaultPriority{16}; ///
+inline constexpr Uint defaultPriority{Uint{TX_MAX_PRIORITIES} >> 1}; ///
 inline constexpr Ulong noTimeSlice{};
 inline constexpr Ulong minimumStackSize{TX_MINIMUM_STACK};
 
@@ -76,8 +76,9 @@ class Thread final : Native::TX_THREAD
     /// \param timeSlice
     /// \param startType
     explicit Thread(const std::string_view name, Allocator &allocator, const RunCallback &runCallback, const Ulong stackSize = minimumStackSize,
-                    const NotifyCallback &entryExitNotifyCallback = {}, const Uint priority = defaultPriority, const Uint preamptionThresh = defaultPriority,
-                    const Ulong timeSlice = noTimeSlice, const ThreadStartType startType = ThreadStartType::autoStart)
+                    const NotifyCallback &entryExitNotifyCallback = {}, const Uint priority = defaultPriority,
+                    const Uint preamptionThresh = Uint{TX_MAX_PRIORITIES}, const Ulong timeSlice = noTimeSlice,
+                    const ThreadStartType startType = ThreadStartType::autoStart)
         requires(std::is_same_v<typename Allocator::value_type, std::byte>);
 
     ~Thread();
@@ -178,7 +179,8 @@ Thread<Allocator>::Thread(const std::string_view name, Allocator &allocator, con
 
     using namespace Native;
     [[maybe_unused]] Error error{tx_thread_create(this, const_cast<char *>(name.data()), entryFunction, reinterpret_cast<Ulong>(this), m_allocatedStackPtr,
-                                                  stackSize, priority, preamptionThresh, timeSlice, std::to_underlying(startType))};
+                                                  stackSize, (preamptionThresh == Uint{TX_MAX_PRIORITIES}) ? priority : preamptionThresh, preamptionThresh,
+                                                  timeSlice, std::to_underlying(startType))};
     assert(error == Error::success);
 
     error = Error{tx_thread_entry_exit_notify(this, Thread::entryExitNotifyCallback)};
