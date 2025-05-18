@@ -77,7 +77,8 @@ class Thread final : Native::TX_THREAD
     /// \param startType
     explicit Thread(const std::string_view name, Allocator &allocator, const RunCallback &runCallback, const Ulong stackSize = minimumStackSize,
                     const NotifyCallback &entryExitNotifyCallback = {}, const Uint priority = defaultPriority, const Uint preamptionThresh = defaultPriority,
-                    const Ulong timeSlice = noTimeSlice, const ThreadStartType startType = ThreadStartType::autoStart);
+                    const Ulong timeSlice = noTimeSlice, const ThreadStartType startType = ThreadStartType::autoStart)
+        requires(std::is_same_v<typename Allocator::value_type, std::byte>);
 
     ~Thread();
 
@@ -147,7 +148,9 @@ class Thread final : Native::TX_THREAD
     Allocator &m_allocator;
     const RunCallback m_runCallback;
     const NotifyCallback m_entryExitNotifyCallback;
-    BinarySemaphore<> *m_exitSignalPtr{};
+    BinarySemaphore *m_exitSignalPtr{};
+    Allocator::value_type *m_allocatedStackPtr{};
+    Ulong m_allocatedStackSize{};
 }; // namespace ThreadX
 
 template <SimpleAllocator Allocator>
@@ -166,17 +169,16 @@ template <SimpleAllocator Allocator>
 Thread<Allocator>::Thread(const std::string_view name, Allocator &allocator, const RunCallback &runCallback, const Ulong stackSize,
                           const NotifyCallback &entryExitNotifyCallback, const Uint priority, const Uint preamptionThresh, const Ulong timeSlice,
                           const ThreadStartType startType)
+    requires(std::is_same_v<typename Allocator::value_type, std::byte>)
     : Native::TX_THREAD{}, m_allocator{allocator}, m_runCallback{runCallback}, m_entryExitNotifyCallback{entryExitNotifyCallback}
 {
-    if (allocator.isBytePoolAllocator())
-    {
-        assert(not Allocator::isBytePoolAllocator() or (stackSize % sizeof(typename Allocator::value_type)) == 0);
-    }
+    m_allocatedStackPtr = m_allocator.allocate(stackSize);
+    assert(m_allocatedStackPtr != nullptr);
+    m_allocatedStackSize = stackSize;
 
     using namespace Native;
-    [[maybe_unused]] Error error{tx_thread_create(this, const_cast<char *>(name.data()), entryFunction, reinterpret_cast<Ulong>(this),
-                                                  m_allocator.allocate(stackSize / sizeof(typename Allocator::value_type)), stackSize, priority,
-                                                  preamptionThresh, timeSlice, std::to_underlying(startType))};
+    [[maybe_unused]] Error error{tx_thread_create(this, const_cast<char *>(name.data()), entryFunction, reinterpret_cast<Ulong>(this), m_allocatedStackPtr,
+                                                  stackSize, priority, preamptionThresh, timeSlice, std::to_underlying(startType))};
     assert(error == Error::success);
 
     error = Error{tx_thread_entry_exit_notify(this, Thread::entryExitNotifyCallback)};
@@ -192,7 +194,7 @@ Thread<Allocator>::~Thread()
     error = Error{tx_thread_delete(this)};
     assert(error == Error::success);
 
-    m_allocator.deallocate(static_cast<Allocator::value_type *>(tx_thread_stack_start)); // todo stack_start may be different
+    m_allocator.deallocate(m_allocatedStackPtr, m_allocatedStackSize); // internal stack pointer and size may be updated by threadX becasue of alignment
 }
 
 template <SimpleAllocator Allocator>

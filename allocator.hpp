@@ -14,8 +14,6 @@ class Allocator final
 
     Allocator &operator=(const Allocator &) = delete;
 
-    [[nodiscard]] static consteval auto isBytePoolAllocator() -> bool;
-
     explicit Allocator(Pool &pool);
 
     [[nodiscard]] auto allocate(std::size_t n) -> T *requires(Pool::isBytePool());
@@ -28,21 +26,15 @@ class Allocator final
     template <typename Rep, typename Period>
     [[nodiscard]] auto allocate(std::size_t n, const std::chrono::duration<Rep, Period> &duration) -> T *requires(not Pool::isBytePool());
 
-    auto deallocate(T *allocationPtr, std::size_t n = 0) -> void
+    auto deallocate(T *allocationPtr, std::size_t n) -> void
         requires(Pool::isBytePool());
 
-    auto deallocate(T *allocationPtr, std::size_t n = 0) -> void
+    auto deallocate(T *allocationPtr, std::size_t n) -> void
         requires(not Pool::isBytePool());
 
   private:
     Pool &m_pool;
 };
-
-template <class Pool, typename T>
-consteval auto Allocator<Pool, T>::isBytePoolAllocator() -> bool
-{
-    return Pool::isBytePool();
-}
 
 template <class Pool, typename T>
 Allocator<Pool, T>::Allocator(Pool &pool) : m_pool{pool}

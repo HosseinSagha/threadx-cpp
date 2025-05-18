@@ -15,8 +15,6 @@ template <typename Message, SimpleAllocator Allocator>
 class Queue final : Native::TX_QUEUE
 {
     static_assert(sizeof(Message) % sizeof(wordSize) == 0, "Queue message size must be a multiple of word size.");
-    static_assert(not Allocator::isBytePoolAllocator() or (sizeof(Message) % sizeof(typename Allocator::value_type)) == 0,
-                  "Queue message size must be a multiple of allocator value type size.");
 
   public:
     /// external Notifycallback type
@@ -34,7 +32,8 @@ class Queue final : Native::TX_QUEUE
     /// \param size max num of messages in queue.
     /// \param sendNotifyCallback function to call when a message sent to queue.
     /// The Notifycallback is not allowed to call any ThreadX API with a suspension option.
-    explicit Queue(const std::string_view name, Allocator &allocator, const Ulong size, const NotifyCallback &sendNotifyCallback = {});
+    explicit Queue(const std::string_view name, Allocator &allocator, const Ulong size, const NotifyCallback &sendNotifyCallback = {})
+        requires(sizeof(typename Allocator::value_type) == sizeof(std::byte));
 
     ~Queue();
 
@@ -97,12 +96,12 @@ class Queue final : Native::TX_QUEUE
 
 template <typename Message, SimpleAllocator Allocator>
 Queue<Message, Allocator>::Queue(const std::string_view name, Allocator &allocator, const Ulong size, const NotifyCallback &sendNotifyCallback)
+    requires(sizeof(typename Allocator::value_type) == sizeof(std::byte))
     : Native::TX_QUEUE{}, m_allocator{allocator}, m_sendNotifyCallback{sendNotifyCallback}
 {
     using namespace Native;
     [[maybe_unused]] Error error{tx_queue_create(this, const_cast<char *>(name.data()), sizeof(Message) / sizeof(wordSize),
-                                                 m_allocator.allocate(size * (sizeof(Message) / sizeof(typename Allocator::value_type))),
-                                                 size * sizeof(Message))};
+                                                 m_allocator.allocate(size * sizeof(Message)), size * sizeof(Message))};
     assert(error == Error::success);
 
     if (m_sendNotifyCallback)
@@ -118,7 +117,7 @@ Queue<Message, Allocator>::~Queue()
     [[maybe_unused]] Error error{tx_queue_delete(this)};
     assert(error == Error::success);
 
-    m_allocator.deallocate(reinterpret_cast<Allocator::value_type *>(tx_queue_start));
+    m_allocator.deallocate(reinterpret_cast<Allocator::value_type *>(tx_queue_start), tx_queue_capacity * sizeof(Message));
 }
 
 template <typename Message, SimpleAllocator Allocator>
