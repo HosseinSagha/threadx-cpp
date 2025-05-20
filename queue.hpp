@@ -44,6 +44,7 @@ class Queue final : Native::TX_QUEUE
 
     template <class Clock, typename Duration>
     auto tryReceiveUntil(const std::chrono::time_point<Clock, Duration> &time) -> ExpectedMessage;
+
     /// receive a message from queue
     /// \param duration
     /// \return
@@ -72,6 +73,7 @@ class Queue final : Native::TX_QUEUE
 
     template <class Clock, typename Duration>
     auto trySendFrontUntil(const Message &message, const std::chrono::time_point<Clock, Duration> &time) -> Error;
+
     ///
     /// \param duration
     /// \param message
@@ -82,6 +84,7 @@ class Queue final : Native::TX_QUEUE
     /// This service places the highest priority thread suspended for a message (or to place a message) on this queue at
     /// the front of the suspension list. All other threads remain in the same FIFO order they were suspended in.
     auto prioritise() -> Error;
+
     /// delete all messages
     auto flush() -> Error;
 
@@ -97,7 +100,7 @@ class Queue final : Native::TX_QUEUE
 template <typename Message, SimpleAllocator Allocator>
 Queue<Message, Allocator>::Queue(const std::string_view name, Allocator &allocator, const Ulong size, const NotifyCallback &sendNotifyCallback)
     requires(sizeof(typename Allocator::value_type) == sizeof(std::byte))
-    : Native::TX_QUEUE{}, m_allocator{allocator}, m_sendNotifyCallback{sendNotifyCallback}
+    : Native::TX_QUEUE{}, m_allocator{allocator}, m_sendNotifyCallback{std::move(sendNotifyCallback)}
 {
     using namespace Native;
     [[maybe_unused]] Error error{tx_queue_create(this, const_cast<char *>(name.data()), sizeof(Message) / sizeof(wordSize),

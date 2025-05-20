@@ -31,8 +31,10 @@ class CriticalSection final
   public:
     explicit CriticalSection();
     ~CriticalSection();
+
     /// Locks the CPU, preventing thread and interrupt switches.
     static auto lock() -> void;
+
     /// Unlocks the CPU, allowing other interrupts and threads to preempt the current execution context.
     static auto unlock() -> void;
 
@@ -49,7 +51,6 @@ auto start() -> void;
 
 /// Determines if the current execution context is inside an interrupt service routine.
 /// \return true if the current execution context is ISR, false otherwise
-
 [[nodiscard]] auto inIsr() -> bool;
 
 [[nodiscard]] auto state() -> State;

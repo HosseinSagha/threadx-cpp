@@ -27,6 +27,7 @@ class BytePool final : Native::TX_BYTE_POOL
     /// Places the highest priority thread suspended for memory on this pool at the front of the suspension list.
     /// All other threads remain in the same FIFO order they were suspended in.
     auto prioritise() -> Error;
+
     [[nodiscard]] auto name() const -> std::string_view;
 
   private:
@@ -81,6 +82,7 @@ class BlockPool final : Native::TX_BLOCK_POOL
     /// Places the highest priority thread suspended for memory on this pool at the front of the suspension list.
     /// All other threads remain in the same FIFO order they were suspended in.
     auto prioritise() -> Error;
+
     [[nodiscard]] auto name() const -> std::string_view;
 
   private:

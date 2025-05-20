@@ -18,10 +18,10 @@ class EventFlags final : Native::TX_EVENT_FLAGS_GROUP
         clear
     };
 
-    static constexpr size_t eventFlagBit{wordSize * CHAR_BIT};
+    static constexpr size_t eventFlagBits{wordSize * CHAR_BIT};
     /// external callback type
     using NotifyCallback = std::function<void(EventFlags &)>;
-    using Bitmask = std::bitset<EventFlags::eventFlagBit>;
+    using Bitmask = std::bitset<EventFlags::eventFlagBits>;
     using ExpectedBitmask = std::expected<Bitmask, Error>;
 
     static constexpr auto allBits{Bitmask{std::numeric_limits<Ulong>::max()}};
@@ -39,7 +39,10 @@ class EventFlags final : Native::TX_EVENT_FLAGS_GROUP
     auto clear(const Bitmask &bitMask = allBits) -> Error;
 
     // must be used for calls from initialization, timers, and ISRs
-    auto get(const Bitmask &bitMask = allBits, const Option option = Option::clear) -> ExpectedBitmask;
+    [[nodiscard]] auto get(const Option option = Option::clear) -> ExpectedBitmask;
+
+    // must be used for calls from initialization, timers, and ISRs
+    [[nodiscard]] auto get(const Bitmask &bitMask, const Option option = Option::clear) -> ExpectedBitmask;
 
     auto waitAll(const Bitmask &bitMask, const Option option = Option::clear) -> ExpectedBitmask;
 

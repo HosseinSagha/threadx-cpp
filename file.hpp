@@ -69,7 +69,7 @@ class File final : ThreadX::Native::FX_FILE
 
 template <MediaSectorSize N>
 File::File(const std::string_view fileName, Media<N> &media, const OpenOption option, const NotifyCallback &writeNotifyCallback)
-    : ThreadX::Native::FX_FILE{}, m_writeNotifyCallback{writeNotifyCallback}
+    : ThreadX::Native::FX_FILE{}, m_writeNotifyCallback{std::move(writeNotifyCallback)}
 {
     using namespace ThreadX::Native;
     [[maybe_unused]] Error error{fx_file_open(std::addressof(media), this, const_cast<char *>(fileName.data()), std::to_underlying(option))};

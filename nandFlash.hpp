@@ -62,7 +62,7 @@ inline constexpr ThreadX::Ulong nandBootSector{0};
 class NandFlashBase
 {
   protected:
-    static inline std::atomic_flag m_initialised = ATOMIC_FLAG_INIT;
+    static inline std::once_flag m_initialisedFlag{};
 };
 
 template <ThreadX::Ulong Blocks, ThreadX::Ulong BlockPages, ThreadX::Ulong PageSize>
@@ -204,10 +204,7 @@ template <ThreadX::Ulong Blocks, ThreadX::Ulong BlockPages, ThreadX::Ulong PageS
 NandFlash<Blocks, BlockPages, PageSize>::NandFlash(const NandSpareDataInfo &spareDataInfo)
     : ThreadX::Native::LX_NAND_FLASH{}, m_spareDataInfo{spareDataInfo}
 {
-    if (not m_initialised.test_and_set())
-    {
-        ThreadX::Native::lx_nand_flash_initialize();
-    }
+    std::call_once(m_initialisedFlag, []() { ThreadX::Native::lx_nand_flash_initialize(); });
 }
 
 template <ThreadX::Ulong Blocks, ThreadX::Ulong BlockPages, ThreadX::Ulong PageSize>

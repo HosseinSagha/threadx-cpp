@@ -50,7 +50,7 @@ template <SimpleAllocator Allocator>
 class Thread final : Native::TX_THREAD
 {
   public:
-    using RunCallback = std::function<void()>;
+    using EntryCallback = std::function<void()>;
     using ErrorCallback = std::function<void(Thread &)>;
     using NotifyCallback = std::function<void(Thread &, const ThreadNotifyCondition)>;
     using StackInfo = struct
@@ -75,11 +75,11 @@ class Thread final : Native::TX_THREAD
     /// \param preamptionThresh
     /// \param timeSlice
     /// \param startType
-    explicit Thread(const std::string_view name, Allocator &allocator, const RunCallback &runCallback, const Ulong stackSize = minimumStackSize,
+    explicit Thread(const std::string_view name, Allocator &allocator, const EntryCallback &entryCallback, const Ulong stackSize = minimumStackSize,
                     const NotifyCallback &entryExitNotifyCallback = {}, const Uint priority = defaultPriority,
                     const Uint preamptionThresh = Uint{TX_MAX_PRIORITIES}, const Ulong timeSlice = noTimeSlice,
                     const ThreadStartType startType = ThreadStartType::autoStart)
-        requires(std::is_same_v<typename Allocator::value_type, std::byte>);
+        requires(sizeof(typename Allocator::value_type) == sizeof(std::byte));
 
     ~Thread();
 
@@ -147,7 +147,7 @@ class Thread final : Native::TX_THREAD
     static inline ErrorCallback m_stackErrorNotifyCallback;
 
     Allocator &m_allocator;
-    const RunCallback m_runCallback;
+    const EntryCallback m_entryCallback;
     const NotifyCallback m_entryExitNotifyCallback;
     BinarySemaphore *m_exitSignalPtr{};
     Allocator::value_type *m_allocatedStackPtr{};
@@ -160,18 +160,18 @@ auto Thread<Allocator>::registerStackErrorNotifyCallback(const ErrorCallback &st
     Error error{tx_thread_stack_error_notify(stackErrorNotifyCallback ? Thread::stackErrorNotifyCallback : nullptr)};
     if (error == Error::success)
     {
-        m_stackErrorNotifyCallback = stackErrorNotifyCallback;
+        m_stackErrorNotifyCallback = std::move(stackErrorNotifyCallback);
     }
 
     return error;
 }
 
 template <SimpleAllocator Allocator>
-Thread<Allocator>::Thread(const std::string_view name, Allocator &allocator, const RunCallback &runCallback, const Ulong stackSize,
+Thread<Allocator>::Thread(const std::string_view name, Allocator &allocator, const EntryCallback &entryCallback, const Ulong stackSize,
                           const NotifyCallback &entryExitNotifyCallback, const Uint priority, const Uint preamptionThresh, const Ulong timeSlice,
                           const ThreadStartType startType)
-    requires(std::is_same_v<typename Allocator::value_type, std::byte>)
-    : Native::TX_THREAD{}, m_allocator{allocator}, m_runCallback{runCallback}, m_entryExitNotifyCallback{entryExitNotifyCallback}
+    requires(sizeof(typename Allocator::value_type) == sizeof(std::byte))
+    : Native::TX_THREAD{}, m_allocator{allocator}, m_entryCallback{std::move(entryCallback)}, m_entryExitNotifyCallback{std::move(entryExitNotifyCallback)}
 {
     m_allocatedStackPtr = m_allocator.allocate(stackSize);
     assert(m_allocatedStackPtr != nullptr);
@@ -179,8 +179,8 @@ Thread<Allocator>::Thread(const std::string_view name, Allocator &allocator, con
 
     using namespace Native;
     [[maybe_unused]] Error error{tx_thread_create(this, const_cast<char *>(name.data()), entryFunction, reinterpret_cast<Ulong>(this), m_allocatedStackPtr,
-                                                  stackSize, (preamptionThresh == Uint{TX_MAX_PRIORITIES}) ? priority : preamptionThresh, preamptionThresh,
-                                                  timeSlice, std::to_underlying(startType))};
+                                                  stackSize, priority, (preamptionThresh == Uint{TX_MAX_PRIORITIES}) ? priority : preamptionThresh, timeSlice,
+                                                  std::to_underlying(startType))};
     assert(error == Error::success);
 
     error = Error{tx_thread_entry_exit_notify(this, Thread::entryExitNotifyCallback)};
@@ -300,7 +300,7 @@ auto Thread<Allocator>::timeSlice() const -> Ulong
 template <SimpleAllocator Allocator>
 auto Thread<Allocator>::join() -> void
 {
-    assert(not m_exitSignalPtr);
+    assert(not m_exitSignalPtr); // only one thread can call join() at a time.
     BinarySemaphore exitSignal("join");
 
     {
@@ -341,7 +341,7 @@ auto Thread<Allocator>::stackInfo() const -> StackInfo
 template <SimpleAllocator Allocator>
 auto Thread<Allocator>::entryFunction(Ulong thisPtr) -> void
 {
-    reinterpret_cast<Thread *>(thisPtr)->m_runCallback();
+    reinterpret_cast<Thread *>(thisPtr)->m_entryCallback();
 }
 
 template <SimpleAllocator Allocator>

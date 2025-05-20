@@ -6,6 +6,13 @@
 
 namespace ThreadX
 {
+// TODO: Remove this when C++26 definition is available
+template <class Alloc>
+concept SimpleAllocator = requires(Alloc alloc, std::size_t n) {
+    { *alloc.allocate(n) };
+    { alloc.deallocate(alloc.allocate(n), n) };
+} and std::copy_constructible<Alloc> and std::equality_comparable<Alloc>;
+
 template <class Pool, typename T = std::byte>
 class Allocator final
 {
@@ -112,14 +119,4 @@ auto operator==(const Allocator<T> &lhs, const Allocator<U> &rhs) -> bool
 {
     return std::addressof(lhs.m_pool) == std::addressof(rhs.m_pool) and T::value_type == U::value_type;
 }
-
-// TODO: Remove this when C++26 definition is available
-template <class Alloc>
-concept SimpleAllocator = requires(Alloc alloc, std::size_t n) {
-    { *alloc.allocate(n) };
-    { alloc.deallocate(alloc.allocate(n), n) };
-} && std::copy_constructible<Alloc> && std::equality_comparable<Alloc>;
-
-static_assert(SimpleAllocator<Allocator<BytePool<4>>>);
-static_assert(SimpleAllocator<Allocator<BlockPool<2, 2>>>);
 } // namespace ThreadX

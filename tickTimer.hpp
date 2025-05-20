@@ -119,8 +119,8 @@ constexpr auto TickTimer::ticks(const std::chrono::duration<Rep, Period> &durati
 
 TickTimer::TickTimer(const std::string_view name, const auto &timeout, const ExpirationCallback &expirationCallback, const Type type,
                      const ActivationType activationType)
-    : Native::TX_TIMER{}, m_timeoutTicks{ticks(timeout)}, m_expirationCallback{expirationCallback}, m_id{expirationCallback ? ++m_idCounter : 0}, m_type{type},
-      m_activationType{activationType}
+    : Native::TX_TIMER{}, m_timeoutTicks{ticks(timeout)}, m_expirationCallback{std::move(expirationCallback)}, m_id{expirationCallback ? ++m_idCounter : 0},
+      m_type{type}, m_activationType{activationType}
 {
     using namespace Native;
     [[maybe_unused]] Error error{tx_timer_create(this, const_cast<char *>(name.data()), m_expirationCallback ? TickTimer::expirationCallback : nullptr,

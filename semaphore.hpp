@@ -80,7 +80,7 @@ consteval auto CountingSemaphore<Ceiling>::max() const -> Ulong
 /// \param releaseNotifyCallback The Notifycallback is not allowed to call any ThreadX API with a suspension option.
 template <Ulong Ceiling>
 CountingSemaphore<Ceiling>::CountingSemaphore(const std::string_view name, const Ulong initialCount, const NotifyCallback &releaseNotifyCallback)
-    : Native::TX_SEMAPHORE{}, m_releaseNotifyCallback{releaseNotifyCallback}
+    : Native::TX_SEMAPHORE{}, m_releaseNotifyCallback{std::move(releaseNotifyCallback)}
 {
     assert(initialCount <= Ceiling);
 

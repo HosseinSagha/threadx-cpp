@@ -3,9 +3,9 @@
 #include "fxCommon.hpp"
 #include "tickTimer.hpp"
 #include <array>
-#include <atomic>
 #include <expected>
 #include <functional>
+#include <mutex>
 #include <span>
 #include <string_view>
 #include <utility>
@@ -45,7 +45,7 @@ class MediaBase
   protected:
     explicit MediaBase() = default;
 
-    static inline std::atomic_flag m_fileSystemInitialised = ATOMIC_FLAG_INIT;
+    static inline std::once_flag m_initialisedFlag{};
 };
 
 template <MediaSectorSize N = defaultSectorSize>
@@ -54,6 +54,31 @@ class Media : ThreadX::Native::FX_MEDIA, MediaBase
   public:
     friend class File;
 
+    class InternalDriver
+    {
+      public:
+        InternalDriver(Media &media);
+
+        [[nodiscard]] static consteval auto sectorSize() -> MediaSectorSize;
+        auto info() const -> void *;
+        auto request() const -> MediaDriverRequest;
+        auto status(const Error error) -> void;
+        auto buffer() const -> ThreadX::Uchar *;
+        auto logicalSector() const -> ThreadX::Ulong;
+        auto sectors() const -> ThreadX::Ulong;
+        auto physicalSector() -> ThreadX::Ulong;
+        auto physicalTrack() -> ThreadX::Uint;
+        auto writeProtect(const bool writeProtect = true) -> void;
+        auto freeSectorUpdate(const bool freeSectorUpdate = true) -> void;
+        auto systemWrite() const -> bool;
+        auto dataSectorRead() const -> bool;
+        auto sectorType() const -> MediaSectorType;
+
+      private:
+        Media &m_media;
+    };
+
+    using DriverCallback = std::function<void(InternalDriver &)>;
     using NotifyCallback = std::function<void(Media &)>;
     using ExpectedUlong64 = std::expected<ThreadX::Ulong64, Error>;
     using ExpectedStr = std::expected<std::string_view, Error>;
@@ -61,11 +86,13 @@ class Media : ThreadX::Native::FX_MEDIA, MediaBase
     Media(const Media &) = delete;
     Media &operator=(const Media &) = delete;
 
-    [[nodiscard]] static consteval auto sectorSize() -> MediaSectorSize;
     static auto setFileSystemTime() -> Error;
+
     // Once initialized by this constructor, the application should call fx_system_date_set and fx_system_time_set to start with an accurate system date and
     // time.
-    explicit Media(std::byte *driverInfoPtr = nullptr, const NotifyCallback &openNotifyCallback = {}, const NotifyCallback &closeNotifyCallback = {});
+    explicit Media(const DriverCallback &driverCallback, std::byte *driverInfoPtr = nullptr, const NotifyCallback &openNotifyCallback = {},
+                   const NotifyCallback &closeNotifyCallback = {});
+    virtual ~Media();
 
     auto open(const std::string_view name, const FaultTolerantMode mode = FaultTolerantMode::enable) -> Error;
     auto format(const std::string_view volumeName, const ThreadX::Ulong storageSize, const ThreadX::Uint sectorPerCluster = 1,
@@ -94,54 +121,33 @@ class Media : ThreadX::Native::FX_MEDIA, MediaBase
     auto writeSector(const ThreadX::Ulong sectorNo, const std::span<std::byte, std::to_underlying(N)> sectorData) -> Error;
     auto readSector(const ThreadX::Ulong sectorNo, std::span<std::byte, std::to_underlying(N)> sectorData) -> Error;
 
-    auto driverInfo() const -> void *;
-    auto driverRequest() const -> MediaDriverRequest;
-    auto driverStatus(const Error error) -> void;
-    auto driverBuffer() const -> ThreadX::Uchar *;
-    auto driverLogicalSector() const -> ThreadX::Ulong;
-    auto driverSectors() const -> ThreadX::Ulong;
-    auto driverPhysicalSector() -> ThreadX::Ulong;
-    auto driverPhysicalTrack() -> ThreadX::Uint;
-    auto driverWriteProtect(const bool writeProtect = true) -> void;
-    auto driverFreeSectorUpdate(const bool freeSectorUpdate = true) -> void;
-    auto driverSystemWrite() const -> bool;
-    auto driverDataSectorRead() const -> bool;
-    auto driverSectorType() const -> MediaSectorType;
-
-    virtual void driverCallback() = 0;
-
-  protected:
-    virtual ~Media();
-
   private:
     static auto driverCallback(auto mediaPtr) -> void;
     static auto openNotifyCallback(auto mediaPtr) -> void;
     static auto closeNotifyCallback(auto mediaPtr) -> void;
 
+    static constexpr size_t volumNameLength{12};
 #ifdef FX_ENABLE_FAULT_TOLERANT
     static constexpr ThreadX::Uint m_faultTolerantCacheSize{FX_FAULT_TOLERANT_MAXIMUM_LOG_FILE_SIZE};
     static_assert(m_faultTolerantCacheSize % ThreadX::wordSize == 0, "Fault tolerant cache size must be a multiple of word size.");
+
     // the scratch memory size shall be at least 3072 bytes and must be multiple of sector size.
     static constexpr auto cacheSize = []() {
         return (std::to_underlying(N) > std::to_underlying(MediaSectorSize::oneKiloByte))
                    ? std::to_underlying(MediaSectorSize::fourKilobytes) / ThreadX::wordSize
                    : m_faultTolerantCacheSize / ThreadX::wordSize;
     };
+
     std::array<ThreadX::Ulong, cacheSize()> m_faultTolerantCache{};
 #endif
+    DriverCallback m_driverCallback;
     std::byte *m_driverInfoPtr;
     const NotifyCallback m_openNotifyCallback;
     const NotifyCallback m_closeNotifyCallback;
-    static constexpr size_t volumNameLength{12};
+    InternalDriver m_internalDriver{*this};
     std::array<ThreadX::Ulong, std::to_underlying(N) / ThreadX::wordSize> m_mediaMemory{};
     const ThreadX::Ulong m_mediaMemorySizeInBytes{m_mediaMemory.size() * ThreadX::wordSize};
 };
-
-template <MediaSectorSize N>
-consteval auto Media<N>::sectorSize() -> MediaSectorSize
-{
-    return N;
-}
 
 template <MediaSectorSize N>
 auto Media<N>::setFileSystemTime() -> Error
@@ -163,14 +169,15 @@ auto Media<N>::setFileSystemTime() -> Error
 }
 
 template <MediaSectorSize N>
-Media<N>::Media(std::byte *driverInfoPtr, const NotifyCallback &openNotifyCallback, const NotifyCallback &closeNotifyCallback)
-    : ThreadX::Native::FX_MEDIA{}, m_driverInfoPtr{driverInfoPtr}, m_openNotifyCallback{openNotifyCallback}, m_closeNotifyCallback{closeNotifyCallback}
+Media<N>::Media(const DriverCallback &driverCallback, std::byte *driverInfoPtr, const NotifyCallback &openNotifyCallback,
+                const NotifyCallback &closeNotifyCallback)
+    : ThreadX::Native::FX_MEDIA{}, m_driverCallback{std::move(driverCallback)}, m_driverInfoPtr{driverInfoPtr},
+      m_openNotifyCallback{std::move(openNotifyCallback)}, m_closeNotifyCallback{std::move(closeNotifyCallback)}
 {
-    if (not m_fileSystemInitialised.test_and_set())
-    {
+    std::call_once(m_initialisedFlag, []() {
         ThreadX::Native::fx_system_initialize();
         setFileSystemTime();
-    }
+    });
 
     if (m_openNotifyCallback)
     {
@@ -189,7 +196,7 @@ template <MediaSectorSize N>
 Media<N>::~Media()
 {
     [[maybe_unused]] auto error{close()};
-    assert(error == Error::success || error == Error::mediaNotOpen);
+    assert(error == Error::success or error == Error::mediaNotOpen);
 }
 
 template <MediaSectorSize N>
@@ -394,75 +401,87 @@ auto Media<N>::readSector(const ThreadX::Ulong sectorNo, std::span<std::byte, st
 }
 
 template <MediaSectorSize N>
-auto Media<N>::driverInfo() const -> void *
+Media<N>::InternalDriver::InternalDriver(Media &media) : m_media{media}
 {
-    return fx_media_driver_info;
 }
 
 template <MediaSectorSize N>
-auto Media<N>::driverRequest() const -> MediaDriverRequest
+consteval auto Media<N>::InternalDriver::sectorSize() -> MediaSectorSize
 {
-    return MediaDriverRequest{fx_media_driver_request};
-}
-template <MediaSectorSize N>
-auto Media<N>::driverStatus(const Error error) -> void
-{
-    fx_media_driver_status = std::to_underlying(error);
+    return N;
 }
 
 template <MediaSectorSize N>
-auto Media<N>::driverBuffer() const -> ThreadX::Uchar *
+auto Media<N>::InternalDriver::info() const -> void *
 {
-    return fx_media_driver_buffer;
+    // Access the member via the containing FX_MEDIA pointer
+    return m_media.fx_media_driver_info;
 }
 
 template <MediaSectorSize N>
-auto Media<N>::driverLogicalSector() const -> ThreadX::Ulong
+auto Media<N>::InternalDriver::request() const -> MediaDriverRequest
 {
-    return fx_media_driver_logical_sector;
+    return MediaDriverRequest{m_media.fx_media_driver_request};
+}
+template <MediaSectorSize N>
+auto Media<N>::InternalDriver::status(const Error error) -> void
+{
+    m_media.fx_media_driver_status = std::to_underlying(error);
 }
 
 template <MediaSectorSize N>
-auto Media<N>::driverSectors() const -> ThreadX::Ulong
+auto Media<N>::InternalDriver::buffer() const -> ThreadX::Uchar *
 {
-    return fx_media_driver_sectors;
+    return m_media.fx_media_driver_buffer;
 }
 
 template <MediaSectorSize N>
-auto Media<N>::driverWriteProtect(const bool writeProtect) -> void
+auto Media<N>::InternalDriver::logicalSector() const -> ThreadX::Ulong
 {
-    fx_media_driver_write_protect = writeProtect;
+    return m_media.fx_media_driver_logical_sector;
 }
 
 template <MediaSectorSize N>
-auto Media<N>::driverFreeSectorUpdate(const bool freeSectorUpdate) -> void
+auto Media<N>::InternalDriver::sectors() const -> ThreadX::Ulong
 {
-    fx_media_driver_free_sector_update = freeSectorUpdate;
+    return m_media.fx_media_driver_sectors;
 }
 
 template <MediaSectorSize N>
-auto Media<N>::driverSystemWrite() const -> bool
+auto Media<N>::InternalDriver::writeProtect(const bool writeProtect) -> void
 {
-    return static_cast<bool>(fx_media_driver_system_write);
+    m_media.fx_media_driver_write_protect = writeProtect;
 }
 
 template <MediaSectorSize N>
-auto Media<N>::driverDataSectorRead() const -> bool
+auto Media<N>::InternalDriver::freeSectorUpdate(const bool freeSectorUpdate) -> void
 {
-    return static_cast<bool>(fx_media_driver_data_sector_read);
+    m_media.fx_media_driver_free_sector_update = freeSectorUpdate;
 }
 
 template <MediaSectorSize N>
-auto Media<N>::driverSectorType() const -> MediaSectorType
+auto Media<N>::InternalDriver::systemWrite() const -> bool
 {
-    return MediaSectorType{fx_media_driver_sector_type};
+    return static_cast<bool>(m_media.fx_media_driver_system_write);
+}
+
+template <MediaSectorSize N>
+auto Media<N>::InternalDriver::dataSectorRead() const -> bool
+{
+    return static_cast<bool>(m_media.fx_media_driver_data_sector_read);
+}
+
+template <MediaSectorSize N>
+auto Media<N>::InternalDriver::sectorType() const -> MediaSectorType
+{
+    return MediaSectorType{m_media.fx_media_driver_sector_type};
 }
 
 template <MediaSectorSize N>
 auto Media<N>::driverCallback(auto mediaPtr) -> void
 {
     auto &media{static_cast<Media &>(*mediaPtr)};
-    media.driverCallback();
+    media.m_driverCallback(media.m_internalDriver);
 }
 
 template <MediaSectorSize N>
