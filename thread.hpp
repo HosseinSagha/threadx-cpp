@@ -32,8 +32,8 @@ enum class ThreadState : Uint
 ///
 enum class ThreadStartType : Uint
 {
-    dontStart, ///< dontStart
-    autoStart  ///< autoStart
+    suspended,
+    running
 };
 
 enum class ThreadNotifyCondition : Uint
@@ -78,7 +78,7 @@ class Thread final : Native::TX_THREAD
     explicit Thread(const std::string_view name, Allocator &allocator, const EntryCallback &entryCallback, const Ulong stackSize = minimumStackSize,
                     const NotifyCallback &entryExitNotifyCallback = {}, const Uint priority = defaultPriority,
                     const Uint preamptionThresh = Uint{TX_MAX_PRIORITIES}, const Ulong timeSlice = noTimeSlice,
-                    const ThreadStartType startType = ThreadStartType::autoStart)
+                    const ThreadStartType startType = ThreadStartType::running)
         requires(sizeof(typename Allocator::value_type) == sizeof(std::byte));
 
     ~Thread();

@@ -1,3 +1,5 @@
+#pragma once
+
 #include "tickTimer.hpp"
 #include "txCommon.hpp"
 #include <bitset>
