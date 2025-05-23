@@ -16,7 +16,7 @@ class EventFlags final : Native::TX_EVENT_FLAGS_GROUP
   public:
     enum class Option
     {
-        dontClear,
+        keep,
         clear
     };
 
@@ -96,7 +96,7 @@ template <typename Rep, typename Period>
 auto EventFlags::waitAllFor(const Bitmask &bitMask, const std::chrono::duration<Rep, Period> &duration, const Option option) -> ExpectedBitmask
 {
     auto flagOption{FlagOption::allClear};
-    if (option == Option::dontClear)
+    if (option == Option::keep)
     {
         flagOption = FlagOption::all;
     }
@@ -114,7 +114,7 @@ template <typename Rep, typename Period>
 auto EventFlags::waitAnyFor(const Bitmask &bitMask, const std::chrono::duration<Rep, Period> &duration, const Option option) -> ExpectedBitmask
 {
     auto flagOption{FlagOption::anyClear};
-    if (option == Option::dontClear)
+    if (option == Option::keep)
     {
         flagOption = FlagOption::any;
     }
