@@ -177,6 +177,8 @@ Thread<Allocator>::Thread(const std::string_view name, Allocator &allocator, con
     assert(m_allocatedStackPtr != nullptr);
     m_allocatedStackSize = stackSize;
 
+    static_assert(wordSize >= sizeof(uintptr_t)); // this is passed as ulong
+
     using namespace Native;
     [[maybe_unused]] Error error{tx_thread_create(this, const_cast<char *>(name.data()), entryFunction, reinterpret_cast<Ulong>(this), m_allocatedStackPtr,
                                                   stackSize, priority, (preamptionThresh == Uint{TX_MAX_PRIORITIES}) ? priority : preamptionThresh, timeSlice,
