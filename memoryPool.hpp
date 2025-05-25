@@ -31,7 +31,7 @@ class BytePool final : Native::TX_BYTE_POOL
     [[nodiscard]] auto name() const -> std::string_view;
 
   private:
-    std::array<Ulong, Size / wordSize> m_pool{}; // Ulong alignment
+    alignas(Ulong) std::array<std::byte, Size> m_pool{};
 };
 
 template <Ulong Size>
@@ -44,7 +44,7 @@ template <Ulong Size>
 BytePool<Size>::BytePool(const std::string_view name) : Native::TX_BYTE_POOL{}
 {
     using namespace Native;
-    [[maybe_unused]] Error error{tx_byte_pool_create(this, const_cast<char *>(name.data()), m_pool.data(), Size)};
+    [[maybe_unused]] Error error{tx_byte_pool_create(this, const_cast<char *>(name.data()), m_pool.data(), m_pool.size())};
     assert(error == Error::success);
 }
 
@@ -89,7 +89,7 @@ class BlockPool final : Native::TX_BLOCK_POOL
     static constexpr Ulong Size{Blocks * (BlockSize + sizeof(uintptr_t))};
     static_assert(Size % wordSize == 0, "Pool size must be a multiple of word size.");
 
-    std::array<Ulong, Size / wordSize> m_pool{}; // Ulong alignment
+    alignas(Ulong) std::array<std::byte, Size> m_pool{};
 };
 
 template <Ulong Blocks, Ulong BlockSize>
@@ -108,7 +108,7 @@ template <Ulong Blocks, Ulong BlockSize>
 BlockPool<Blocks, BlockSize>::BlockPool(const std::string_view name) : Native::TX_BLOCK_POOL{}
 {
     using namespace Native;
-    [[maybe_unused]] Error error{tx_block_pool_create(this, const_cast<char *>(name.data()), BlockSize, m_pool.data(), Size)};
+    [[maybe_unused]] Error error{tx_block_pool_create(this, const_cast<char *>(name.data()), BlockSize, m_pool.data(), m_pool.size())};
     assert(error == Error::success);
 }
 

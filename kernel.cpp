@@ -52,7 +52,7 @@ auto inIsr() -> bool
 {
     using namespace Native;
     const Ulong systemState{TX_THREAD_GET_SYSTEM_STATE()};
-    return systemState != TX_INITIALIZE_IS_FINISHED and systemState < TX_INITIALIZE_IN_PROGRESS;
+    return systemState > TX_INITIALIZE_IS_FINISHED and systemState < TX_INITIALIZE_IN_PROGRESS;
 }
 
 auto state() -> State

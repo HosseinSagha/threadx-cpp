@@ -8,7 +8,7 @@ namespace ThreadX
 {
 // TODO: Remove this when C++26 definition is available
 template <class Alloc>
-concept SimpleAllocator = requires(Alloc alloc, std::size_t n) {
+concept StdAllocator = requires(Alloc alloc, std::size_t n) {
     { *alloc.allocate(n) };
     { alloc.deallocate(alloc.allocate(n), n) };
 } and std::copy_constructible<Alloc> and std::equality_comparable<Alloc>;
@@ -23,20 +23,21 @@ class Allocator final
 
     explicit Allocator(Pool &pool);
 
-    [[nodiscard]] auto allocate(std::size_t n) -> T *requires(Pool::isBytePool());
+    [[nodiscard]] auto allocate(const std::size_t n) -> T *;
+
+    template <class Clock, typename Duration>
+    [[nodiscard]] auto tryAllocateUntil(const std::size_t n, const std::chrono::time_point<Clock, Duration> &time) -> T *;
 
     template <typename Rep, typename Period>
-    [[nodiscard]] auto allocate(std::size_t n, const std::chrono::duration<Rep, Period> &duration) -> T *requires(Pool::isBytePool());
-
-    [[nodiscard]] auto allocate(std::size_t n) -> T *requires(not Pool::isBytePool());
+    [[nodiscard]] auto tryAllocateFor(const std::size_t n, const std::chrono::duration<Rep, Period> &duration) -> T *requires(Pool::isBytePool());
 
     template <typename Rep, typename Period>
-    [[nodiscard]] auto allocate(std::size_t n, const std::chrono::duration<Rep, Period> &duration) -> T *requires(not Pool::isBytePool());
+    [[nodiscard]] auto tryAllocateFor(const std::size_t n, const std::chrono::duration<Rep, Period> &duration) -> T *requires(not Pool::isBytePool());
 
-    auto deallocate(T *allocationPtr, std::size_t n) -> void
+    auto deallocate(T *const allocationPtr, const std::size_t n) -> void
         requires(Pool::isBytePool());
 
-    auto deallocate(T *allocationPtr, std::size_t n) -> void
+    auto deallocate(T *const allocationPtr, const std::size_t n) -> void
         requires(not Pool::isBytePool());
 
   private:
@@ -49,13 +50,21 @@ Allocator<Pool, T>::Allocator(Pool &pool) : m_pool{pool}
 }
 
 template <class Pool, typename T>
-auto Allocator<Pool, T>::allocate(std::size_t n) -> T *requires(Pool::isBytePool())
+auto Allocator<Pool, T>::allocate(const std::size_t n) -> T *
+{
+    return tryAllocateFor(n, TickTimer::noWait);
+}
 
-{ return allocate(n, TickTimer::noWait); }
+template <class Pool, typename T>
+template <class Clock, typename Duration>
+auto Allocator<Pool, T>::tryAllocateUntil(const std::size_t n, const std::chrono::time_point<Clock, Duration> &time) -> T *
+{
+    return tryAllocateFor(n, time - Clock::now());
+}
 
 template <class Pool, typename T>
 template <typename Rep, typename Period>
-auto Allocator<Pool, T>::allocate(std::size_t n, const std::chrono::duration<Rep, Period> &duration) -> T *requires(Pool::isBytePool()) {
+auto Allocator<Pool, T>::tryAllocateFor(const std::size_t n, const std::chrono::duration<Rep, Period> &duration) -> T *requires(Pool::isBytePool()) {
     if (n > std::numeric_limits<Ulong>::max() / sizeof(T))
     {
         return nullptr;
@@ -74,13 +83,8 @@ auto Allocator<Pool, T>::allocate(std::size_t n, const std::chrono::duration<Rep
 }
 
 template <class Pool, typename T>
-auto Allocator<Pool, T>::allocate(std::size_t n) -> T *requires(not Pool::isBytePool())
-
-{ return allocate(n, TickTimer::noWait); }
-
-template <class Pool, typename T>
 template <typename Rep, typename Period>
-auto Allocator<Pool, T>::allocate(std::size_t n, const std::chrono::duration<Rep, Period> &duration) -> T *requires(not Pool::isBytePool()) {
+auto Allocator<Pool, T>::tryAllocateFor(const std::size_t n, const std::chrono::duration<Rep, Period> &duration) -> T *requires(not Pool::isBytePool()) {
     if (n > std::numeric_limits<Ulong>::max() / sizeof(T) or static_cast<Ulong>(n * sizeof(T)) > m_pool.blockSize())
     {
         return nullptr;
@@ -99,7 +103,7 @@ auto Allocator<Pool, T>::allocate(std::size_t n, const std::chrono::duration<Rep
 }
 
 template <class Pool, typename T>
-auto Allocator<Pool, T>::deallocate(T *allocationPtr, [[maybe_unused]] std::size_t n) -> void
+auto Allocator<Pool, T>::deallocate(T *const allocationPtr, [[maybe_unused]] const std::size_t n) -> void
     requires(Pool::isBytePool())
 {
     [[maybe_unused]] Error error{Native::tx_byte_release(allocationPtr)};
@@ -107,7 +111,7 @@ auto Allocator<Pool, T>::deallocate(T *allocationPtr, [[maybe_unused]] std::size
 }
 
 template <class Pool, typename T>
-auto Allocator<Pool, T>::deallocate(T *allocationPtr, [[maybe_unused]] std::size_t n) -> void
+auto Allocator<Pool, T>::deallocate(T *const allocationPtr, [[maybe_unused]] const std::size_t n) -> void
     requires(not Pool::isBytePool())
 {
     [[maybe_unused]] Error error{Native::tx_block_release(allocationPtr)};

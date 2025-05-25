@@ -46,7 +46,7 @@ inline constexpr Uint defaultPriority{Uint{TX_MAX_PRIORITIES} >> 1}; ///
 inline constexpr Ulong noTimeSlice{};
 inline constexpr Ulong minimumStackSize{TX_MINIMUM_STACK};
 
-template <SimpleAllocator Allocator>
+template <StdAllocator Allocator>
 class Thread final : Native::TX_THREAD
 {
   public:
@@ -154,7 +154,7 @@ class Thread final : Native::TX_THREAD
     Ulong m_allocatedStackSize{};
 }; // namespace ThreadX
 
-template <SimpleAllocator Allocator>
+template <StdAllocator Allocator>
 auto Thread<Allocator>::registerStackErrorNotifyCallback(const ErrorCallback &stackErrorNotifyCallback) -> Error
 {
     Error error{tx_thread_stack_error_notify(stackErrorNotifyCallback ? Thread::stackErrorNotifyCallback : nullptr)};
@@ -166,7 +166,7 @@ auto Thread<Allocator>::registerStackErrorNotifyCallback(const ErrorCallback &st
     return error;
 }
 
-template <SimpleAllocator Allocator>
+template <StdAllocator Allocator>
 Thread<Allocator>::Thread(const std::string_view name, Allocator &allocator, const EntryCallback &entryCallback, const Ulong stackSize,
                           const NotifyCallback &entryExitNotifyCallback, const Uint priority, const Uint preamptionThresh, const Ulong timeSlice,
                           const ThreadStartType startType)
@@ -187,7 +187,7 @@ Thread<Allocator>::Thread(const std::string_view name, Allocator &allocator, con
     assert(error == Error::success);
 }
 
-template <SimpleAllocator Allocator>
+template <StdAllocator Allocator>
 Thread<Allocator>::~Thread()
 {
     [[maybe_unused]] Error error{tx_thread_terminate(this)};
@@ -199,25 +199,25 @@ Thread<Allocator>::~Thread()
     m_allocator.deallocate(m_allocatedStackPtr, m_allocatedStackSize); // internal stack pointer and size may be updated by threadX becasue of alignment
 }
 
-template <SimpleAllocator Allocator>
+template <StdAllocator Allocator>
 auto Thread<Allocator>::resume() -> Error
 {
     return Error{tx_thread_resume(this)};
 }
 
-template <SimpleAllocator Allocator>
+template <StdAllocator Allocator>
 auto Thread<Allocator>::suspend() -> Error
 {
     return Error{tx_thread_suspend(this)};
 }
 
-template <SimpleAllocator Allocator>
+template <StdAllocator Allocator>
 auto Thread<Allocator>::reset() -> Error
 {
     return Error{tx_thread_reset(this)};
 }
 
-template <SimpleAllocator Allocator>
+template <StdAllocator Allocator>
 auto Thread<Allocator>::restart() -> Error
 {
     if (auto error = Error{tx_thread_reset(this)}; error != Error::success)
@@ -228,76 +228,76 @@ auto Thread<Allocator>::restart() -> Error
     return Error{tx_thread_resume(this)};
 }
 
-template <SimpleAllocator Allocator>
+template <StdAllocator Allocator>
 auto Thread<Allocator>::terminate() -> Error
 {
     return Error{tx_thread_terminate(this)};
 }
 
-template <SimpleAllocator Allocator>
+template <StdAllocator Allocator>
 auto Thread<Allocator>::abortWait() -> Error
 {
     return Error{tx_thread_wait_abort(this)};
 }
 
-template <SimpleAllocator Allocator>
+template <StdAllocator Allocator>
 auto Thread<Allocator>::id() const -> ThisThread::ID
 {
     return ThisThread::ID(static_cast<const Native::TX_THREAD *>(this));
 }
 
-template <SimpleAllocator Allocator>
+template <StdAllocator Allocator>
 auto Thread<Allocator>::name() const -> std::string_view
 {
     return std::string_view{tx_thread_name};
 }
 
-template <SimpleAllocator Allocator>
+template <StdAllocator Allocator>
 auto Thread<Allocator>::state() const -> ThreadState
 {
     return ThreadState{tx_thread_state};
 }
 
-template <SimpleAllocator Allocator>
+template <StdAllocator Allocator>
 auto Thread<Allocator>::preemption(const auto preempt) -> Error
 {
     Uint oldPreempt{};
     return Error{tx_thread_preemption_change(this, preempt, std::addressof(oldPreempt))};
 }
 
-template <SimpleAllocator Allocator>
+template <StdAllocator Allocator>
 auto Thread<Allocator>::preemption() const -> Uint
 {
     return tx_thread_user_preempt_threshold;
 }
 
-template <SimpleAllocator Allocator>
+template <StdAllocator Allocator>
 auto Thread<Allocator>::priority(const auto priority) -> Error
 {
     Uint oldPriority;
     return Error{tx_thread_priority_change(this, priority, std::addressof(oldPriority))};
 }
 
-template <SimpleAllocator Allocator>
+template <StdAllocator Allocator>
 auto Thread<Allocator>::priority() const -> Uint
 {
     return tx_thread_user_priority;
 }
 
-template <SimpleAllocator Allocator>
+template <StdAllocator Allocator>
 auto Thread<Allocator>::timeSlice(const auto timeSlice) -> Error
 {
     Ulong oldTimeSlice;
     return Error{tx_thread_time_slice_change(this, timeSlice, std::addressof(oldTimeSlice))};
 }
 
-template <SimpleAllocator Allocator>
+template <StdAllocator Allocator>
 auto Thread<Allocator>::timeSlice() const -> Ulong
 {
     return tx_thread_new_time_slice;
 }
 
-template <SimpleAllocator Allocator>
+template <StdAllocator Allocator>
 auto Thread<Allocator>::join() -> void
 {
     assert(not m_exitSignalPtr); // only one thread can call join() at a time.
@@ -320,7 +320,7 @@ auto Thread<Allocator>::join() -> void
     m_exitSignalPtr = nullptr;
 }
 
-template <SimpleAllocator Allocator>
+template <StdAllocator Allocator>
 auto Thread<Allocator>::joinable() const -> bool
 {
     // wait on itself resource deadlock and wait on finished thread.
@@ -328,7 +328,7 @@ auto Thread<Allocator>::joinable() const -> bool
     return id() != ThisThread::id() and threadState != ThreadState::completed and threadState != ThreadState::terminated;
 }
 
-template <SimpleAllocator Allocator>
+template <StdAllocator Allocator>
 auto Thread<Allocator>::stackInfo() const -> StackInfo
 {
     return StackInfo{.size = tx_thread_stack_size,
@@ -338,20 +338,20 @@ auto Thread<Allocator>::stackInfo() const -> StackInfo
                                        tx_thread_stack_size}; // As a rule of thumb, keep this below 70%
 }
 
-template <SimpleAllocator Allocator>
+template <StdAllocator Allocator>
 auto Thread<Allocator>::entryFunction(Ulong thisPtr) -> void
 {
     reinterpret_cast<Thread *>(thisPtr)->m_entryCallback();
 }
 
-template <SimpleAllocator Allocator>
+template <StdAllocator Allocator>
 auto Thread<Allocator>::stackErrorNotifyCallback(Native::TX_THREAD *const threadPtr) -> void
 {
     auto &thread{static_cast<Thread &>(*threadPtr)};
     thread.m_stackErrorNotifyCallback(thread);
 }
 
-template <SimpleAllocator Allocator>
+template <StdAllocator Allocator>
 auto Thread<Allocator>::entryExitNotifyCallback(auto *const threadPtr, const auto condition) -> void
 {
     auto &thread{static_cast<Thread &>(*threadPtr)};

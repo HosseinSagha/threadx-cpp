@@ -111,7 +111,7 @@ class NorFlash : ThreadX::Native::LX_NOR_FLASH, NorFlashBase
     const ThreadX::Ulong m_storageSize;
     const ThreadX::Ulong m_baseAddress;
     std::array<ThreadX::Ulong, norSectorSizeInWord> m_sectorBuffer{};
-    std::array<ThreadX::Ulong, CacheSectors * norSectorSizeInWord> m_extendedCacheMemory{};
+    alignas(ThreadX::Ulong) std::array<std::byte, CacheSectors * norSectorSize> m_extendedCacheMemory{};
 };
 
 template <ThreadX::Uint BlockSectors, NorFlashDriver Driver, ThreadX::Uint CacheSectors>
@@ -154,7 +154,7 @@ auto NorFlash<BlockSectors, Driver, CacheSectors>::open() -> Error
 
     if constexpr (CacheSectors > 0)
     {
-        return Error{lx_nor_flash_extended_cache_enable(this, m_extendedCacheMemory.data(), CacheSectors * norSectorSize)};
+        return Error{lx_nor_flash_extended_cache_enable(this, m_extendedCacheMemory.data(), m_extendedCacheMemory.size())};
     }
 
     return Error::success;
@@ -207,7 +207,6 @@ auto NorFlash<BlockSectors, Driver, CacheSectors>::DriverCallback::initialise(Th
     norFlash.lx_nor_flash_total_blocks = norFlash.m_storageSize / norFlash.m_blockSize;
     norFlash.lx_nor_flash_words_per_block = norFlash.m_blockSize / ThreadX::wordSize;
     norFlash.lx_nor_flash_sector_buffer = norFlash.m_sectorBuffer.data();
-
     norFlash.lx_nor_flash_driver_read = DriverCallback::read;
     norFlash.lx_nor_flash_driver_write = DriverCallback::write;
     norFlash.lx_nor_flash_driver_block_erase = DriverCallback::eraseBlock;

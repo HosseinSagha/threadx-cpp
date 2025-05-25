@@ -128,25 +128,23 @@ class Media : ThreadX::Native::FX_MEDIA, MediaBase
 
     static constexpr size_t volumNameLength{12};
 #ifdef FX_ENABLE_FAULT_TOLERANT
-    static constexpr ThreadX::Uint m_faultTolerantCacheSize{FX_FAULT_TOLERANT_MAXIMUM_LOG_FILE_SIZE};
-    static_assert(m_faultTolerantCacheSize % ThreadX::wordSize == 0, "Fault tolerant cache size must be a multiple of word size.");
+    static constexpr ThreadX::Uint m_faultTolerantMinimunCacheSize{FX_FAULT_TOLERANT_MAXIMUM_LOG_FILE_SIZE};
+    static_assert(m_faultTolerantMinimunCacheSize % ThreadX::wordSize == 0, "Fault tolerant cache size must be a multiple of word size.");
 
     // the scratch memory size shall be at least 3072 bytes and must be multiple of sector size.
     static constexpr auto cacheSize = []() {
-        return (std::to_underlying(N) > std::to_underlying(MediaSectorSize::oneKiloByte))
-                   ? std::to_underlying(MediaSectorSize::fourKilobytes) / ThreadX::wordSize
-                   : m_faultTolerantCacheSize / ThreadX::wordSize;
+        return (std::to_underlying(N) > std::to_underlying(MediaSectorSize::oneKiloByte)) ? std::to_underlying(MediaSectorSize::fourKilobytes)
+                                                                                          : m_faultTolerantMinimunCacheSize;
     };
 
-    std::array<ThreadX::Ulong, cacheSize()> m_faultTolerantCache{};
+    alignas(ThreadX::Ulong) std::array<std::byte, cacheSize()> m_faultTolerantCache{};
 #endif
     DriverCallback m_driverCallback;
     std::byte *m_driverInfoPtr;
     const NotifyCallback m_openNotifyCallback;
     const NotifyCallback m_closeNotifyCallback;
+    alignas(ThreadX::Ulong) std::array<std::byte, std::to_underlying(N)> m_mediaMemory{};
     InternalDriver m_internalDriver{*this};
-    std::array<ThreadX::Ulong, std::to_underlying(N) / ThreadX::wordSize> m_mediaMemory{};
-    const ThreadX::Ulong m_mediaMemorySizeInBytes{m_mediaMemory.size() * ThreadX::wordSize};
 };
 
 template <MediaSectorSize N>
@@ -204,8 +202,7 @@ auto Media<N>::open(const std::string_view name, const FaultTolerantMode mode) -
 {
     using namespace ThreadX::Native;
 
-    if (Error error{
-            fx_media_open(this, const_cast<char *>(name.data()), Media::driverCallback, m_driverInfoPtr, m_mediaMemory.data(), m_mediaMemorySizeInBytes)};
+    if (Error error{fx_media_open(this, const_cast<char *>(name.data()), Media::driverCallback, m_driverInfoPtr, m_mediaMemory.data(), m_mediaMemory.size())};
         error != Error::success)
     {
         return error;
@@ -214,7 +211,7 @@ auto Media<N>::open(const std::string_view name, const FaultTolerantMode mode) -
     if (mode == FaultTolerantMode::enable)
     {
 #ifdef FX_ENABLE_FAULT_TOLERANT
-        return Error{fx_fault_tolerant_enable(this, m_faultTolerantCache.data(), m_faultTolerantCacheSize)};
+        return Error{fx_fault_tolerant_enable(this, m_faultTolerantCache.data(), m_faultTolerantCache.size())};
 #else
         assert(mode == FaultTolerantMode::disable);
 #endif
@@ -234,7 +231,7 @@ auto Media<N>::format(const std::string_view volumeName, const ThreadX::Ulong st
                         Media::driverCallback,                                    // Driver entry
                         m_driverInfoPtr,                                          // could be RAM disk memory pointer
                         reinterpret_cast<ThreadX::Uchar *>(m_mediaMemory.data()), // Media buffer pointer
-                        m_mediaMemorySizeInBytes,                                 // Media buffer size
+                        m_mediaMemory.size(),                                     // Media buffer size
                         const_cast<char *>(volumeName.data()),                    // Volume Name
                         1,                                                        // Number of FATs
                         directoryEntriesFat12_16,                                 // Directory Entries

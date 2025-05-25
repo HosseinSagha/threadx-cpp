@@ -40,27 +40,84 @@ class EventFlags final : Native::TX_EVENT_FLAGS_GROUP
     /// \param bitMask flag bitmask to clear
     auto clear(const Bitmask &bitMask = allBits) -> Error;
 
-    // must be used for calls from initialization, timers, and ISRs
+    /// must be used for calls from initialization, timers, and ISRs
+    ///\param option
+    ///\return ExpectedBitmask
+    /// no error returned in case of no events
     [[nodiscard]] auto get(const Option option = Option::clear) -> ExpectedBitmask;
 
-    // must be used for calls from initialization, timers, and ISRs
+    /// must be used for calls from initialization, timers, and ISRs
+    ///\param bitMask
+    ///\param option
+    ///\return ExpectedBitmask
+    /// no error returned in case of no events
     [[nodiscard]] auto get(const Bitmask &bitMask, const Option option = Option::clear) -> ExpectedBitmask;
 
+    ///
+    ///\param bitMask
+    ///\param option
+    ///\return ExpectedBitmask, unexpected if error:
+    /// waitAborted: if Suspension was aborted by another thread, timer, or ISR.
     auto waitAll(const Bitmask &bitMask, const Option option = Option::clear) -> ExpectedBitmask;
 
+    ///
+    ///\tparam Clock
+    ///\tparam Duration
+    ///\param bitMask
+    ///\param time
+    ///\param option
+    ///\return ExpectedBitmask
+    /// noEvents: if it was unable to get the specified events within the specified timeout
+    /// waitAborted: if Suspension was aborted by another thread, timer, or ISR.
     template <class Clock, typename Duration>
-    auto waitAllUntil(const Bitmask &bitMask, const std::chrono::time_point<Clock, Duration> &time, const Option option = Option::clear) -> ExpectedBitmask;
+    auto waitAllUntil(const Bitmask &bitMask, const std::chrono::time_point<Clock, Duration> &time, const Option option = Option::clear)
+        -> ExpectedBitmask;
 
+    ///
+    ///\tparam Rep
+    ///\tparam Period
+    ///\param bitMask
+    ///\param duration
+    ///\param option
+    ///\return ExpectedBitmask
+    /// noEvents: if it was unable to get the specified events within the specified timeout
+    /// waitAborted: if Suspension was aborted by another thread, timer, or ISR.
     template <typename Rep, typename Period>
-    auto waitAllFor(const Bitmask &bitMask, const std::chrono::duration<Rep, Period> &duration, const Option option = Option::clear) -> ExpectedBitmask;
+    auto waitAllFor(const Bitmask &bitMask, const std::chrono::duration<Rep, Period> &duration, const Option option = Option::clear)
+        -> ExpectedBitmask;
 
+    ///
+    ///\param bitMask
+    ///\param option
+    ///\return ExpectedBitmask
+    /// waitAborted: if Suspension was aborted by another thread, timer, or ISR.
     auto waitAny(const Bitmask &bitMask, const Option option = Option::clear) -> ExpectedBitmask;
 
+    ///
+    ///\tparam Clock
+    ///\tparam Duration
+    ///\param bitMask
+    ///\param time
+    ///\param option
+    ///\return ExpectedBitmask
+    /// noEvents: if it was unable to get the specified events within the specified timeout
+    /// waitAborted: if Suspension was aborted by another thread, timer, or ISR.
     template <class Clock, typename Duration>
-    auto waitAnyUntil(const Bitmask &bitMask, const std::chrono::time_point<Clock, Duration> &time, const Option option = Option::clear) -> ExpectedBitmask;
+    auto waitAnyUntil(const Bitmask &bitMask, const std::chrono::time_point<Clock, Duration> &time, const Option option = Option::clear)
+        -> ExpectedBitmask;
 
+    ///
+    ///\tparam Rep
+    ///\tparam Period
+    ///\param bitMask
+    ///\param duration
+    ///\param option
+    ///\return ExpectedBitmask
+    /// noEvents: if it was unable to get the specified events within the specified timeout
+    /// waitAborted: if Suspension was aborted by another thread, timer, or ISR.
     template <typename Rep, typename Period>
-    auto waitAnyFor(const Bitmask &bitMask, const std::chrono::duration<Rep, Period> &duration, const Option option = Option::clear) -> ExpectedBitmask;
+    auto waitAnyFor(const Bitmask &bitMask, const std::chrono::duration<Rep, Period> &duration, const Option option = Option::clear)
+        -> ExpectedBitmask;
 
     [[nodiscard]] auto name() const -> std::string_view;
 
@@ -87,13 +144,15 @@ class EventFlags final : Native::TX_EVENT_FLAGS_GROUP
 };
 
 template <class Clock, typename Duration>
-auto EventFlags::waitAllUntil(const Bitmask &bitMask, const std::chrono::time_point<Clock, Duration> &time, const Option option) -> ExpectedBitmask
+auto EventFlags::waitAllUntil(const Bitmask &bitMask, const std::chrono::time_point<Clock, Duration> &time, const Option option)
+    -> ExpectedBitmask
 {
     return waitAllFor(bitMask, time - Clock::now(), option);
 }
 
 template <typename Rep, typename Period>
-auto EventFlags::waitAllFor(const Bitmask &bitMask, const std::chrono::duration<Rep, Period> &duration, const Option option) -> ExpectedBitmask
+auto EventFlags::waitAllFor(const Bitmask &bitMask, const std::chrono::duration<Rep, Period> &duration, const Option option)
+    -> ExpectedBitmask
 {
     auto flagOption{FlagOption::allClear};
     if (option == Option::keep)
@@ -105,13 +164,15 @@ auto EventFlags::waitAllFor(const Bitmask &bitMask, const std::chrono::duration<
 }
 
 template <class Clock, typename Duration>
-auto EventFlags::waitAnyUntil(const Bitmask &bitMask, const std::chrono::time_point<Clock, Duration> &time, const Option option) -> ExpectedBitmask
+auto EventFlags::waitAnyUntil(const Bitmask &bitMask, const std::chrono::time_point<Clock, Duration> &time, const Option option)
+    -> ExpectedBitmask
 {
     return waitAnyFor(bitMask, time - Clock::now(), option);
 }
 
 template <typename Rep, typename Period>
-auto EventFlags::waitAnyFor(const Bitmask &bitMask, const std::chrono::duration<Rep, Period> &duration, const Option option) -> ExpectedBitmask
+auto EventFlags::waitAnyFor(const Bitmask &bitMask, const std::chrono::duration<Rep, Period> &duration, const Option option)
+    -> ExpectedBitmask
 {
     auto flagOption{FlagOption::anyClear};
     if (option == Option::keep)
@@ -125,7 +186,8 @@ auto EventFlags::waitAnyFor(const Bitmask &bitMask, const std::chrono::duration<
 auto EventFlags::waitFor(const Bitmask &bitMask, const auto &duration, const FlagOption flagOption) -> ExpectedBitmask
 {
     Ulong actualFlags{};
-    if (Error error{tx_event_flags_get(this, bitMask.to_ulong(), std::to_underlying(flagOption), std::addressof(actualFlags), TickTimer::ticks(duration))};
+    if (Error error{tx_event_flags_get(
+            this, bitMask.to_ulong(), std::to_underlying(flagOption), std::addressof(actualFlags), TickTimer::ticks(duration))};
         error != Error::success)
     {
         return std::unexpected(error);

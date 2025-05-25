@@ -173,7 +173,7 @@ class NandFlash : ThreadX::Native::LX_NAND_FLASH, NandFlashBase
     };
 
     NandSpareDataInfo m_spareDataInfo;
-    std::array<ThreadX::Ulong, (2 * Blocks + 3 * pageDataSize() + 2 * PageSize) / ThreadX::wordSize> workingMemory{};
+    alignas(Ulong) std::array<ThreadX::Ulong, (2 * Blocks + 3 * pageDataSize() + 2 * PageSize)> workingMemory{};
 };
 
 template <ThreadX::Ulong Blocks, ThreadX::Ulong BlockPages, ThreadX::Ulong PageSize>
@@ -225,14 +225,14 @@ template <ThreadX::Ulong Blocks, ThreadX::Ulong BlockPages, ThreadX::Ulong PageS
 auto NandFlash<Blocks, BlockPages, PageSize>::open()
 {
     return Error{lx_nand_flash_open(this, const_cast<char *>("nand flash"), DriverCallback::initialise,
-                                    workingMemory.data(), workingMemory.size() * ThreadX::wordSize)};
+                                    workingMemory.data(), workingMemory.size())};
 }
 
 template <ThreadX::Ulong Blocks, ThreadX::Ulong BlockPages, ThreadX::Ulong PageSize>
 auto NandFlash<Blocks, BlockPages, PageSize>::format()
 {
     return Error{lx_nand_flash_format(this, const_cast<char *>("nand flash"), DriverCallback::initialise,
-                                      workingMemory.data(), workingMemory.size() * ThreadX::wordSize)};
+                                      workingMemory.data(), workingMemory.size())};
 }
 
 template <ThreadX::Ulong Blocks, ThreadX::Ulong BlockPages, ThreadX::Ulong PageSize>

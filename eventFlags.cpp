@@ -40,7 +40,12 @@ auto EventFlags::get(const Option option) -> ExpectedBitmask
 
 auto EventFlags::get(const Bitmask &bitMask, const Option option) -> ExpectedBitmask
 {
-    return waitAllFor(bitMask, TickTimer::noWait, option);
+    if (auto expectedBitmask{waitAllFor(bitMask, TickTimer::noWait, option)}; expectedBitmask or expectedBitmask.error() != Error::noEvents)
+    {
+        return expectedBitmask;
+    }
+
+    return ExpectedBitmask{};
 }
 
 auto EventFlags::waitAll(const Bitmask &bitMask, const Option option) -> ExpectedBitmask
