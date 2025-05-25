@@ -67,7 +67,7 @@ auto BytePool<Size>::name() const -> std::string_view
     return std::string_view{tx_byte_pool_name};
 }
 
-template <Ulong Blocks, Ulong BlockSize>
+template <Ulong BlockSize, Ulong Blocks>
 class BlockPool final : Native::TX_BLOCK_POOL
 {
   public:
@@ -92,41 +92,41 @@ class BlockPool final : Native::TX_BLOCK_POOL
     alignas(Ulong) std::array<std::byte, Size> m_pool{};
 };
 
-template <Ulong Blocks, Ulong BlockSize>
-consteval auto BlockPool<Blocks, BlockSize>::blockSize() -> Ulong
+template <Ulong BlockSize, Ulong Blocks>
+consteval auto BlockPool<BlockSize, Blocks>::blockSize() -> Ulong
 {
     return BlockSize;
 }
 
-template <Ulong Blocks, Ulong BlockSize>
-consteval auto BlockPool<Blocks, BlockSize>::isBytePool() -> bool
+template <Ulong BlockSize, Ulong Blocks>
+consteval auto BlockPool<BlockSize, Blocks>::isBytePool() -> bool
 {
     return false;
 }
 
-template <Ulong Blocks, Ulong BlockSize>
-BlockPool<Blocks, BlockSize>::BlockPool(const std::string_view name) : Native::TX_BLOCK_POOL{}
+template <Ulong BlockSize, Ulong Blocks>
+BlockPool<BlockSize, Blocks>::BlockPool(const std::string_view name) : Native::TX_BLOCK_POOL{}
 {
     using namespace Native;
     [[maybe_unused]] Error error{tx_block_pool_create(this, const_cast<char *>(name.data()), BlockSize, m_pool.data(), m_pool.size())};
     assert(error == Error::success);
 }
 
-template <Ulong Blocks, Ulong BlockSize>
-BlockPool<Blocks, BlockSize>::~BlockPool()
+template <Ulong BlockSize, Ulong Blocks>
+BlockPool<BlockSize, Blocks>::~BlockPool()
 {
     [[maybe_unused]] Error error{tx_block_pool_delete(this)};
     assert(error == Error::success);
 }
 
-template <Ulong Blocks, Ulong BlockSize>
-auto BlockPool<Blocks, BlockSize>::prioritise() -> Error
+template <Ulong BlockSize, Ulong Blocks>
+auto BlockPool<BlockSize, Blocks>::prioritise() -> Error
 {
     return Error{tx_block_pool_prioritize(this)};
 }
 
-template <Ulong Blocks, Ulong BlockSize>
-auto BlockPool<Blocks, BlockSize>::name() const -> std::string_view
+template <Ulong BlockSize, Ulong Blocks>
+auto BlockPool<BlockSize, Blocks>::name() const -> std::string_view
 {
     return std::string_view{tx_block_pool_name};
 }

@@ -11,7 +11,7 @@
 
 namespace ThreadX
 {
-template <typename Message, StdAllocator Allocator>
+template <typename Message, Ulong Size, StdAllocator Allocator>
 class Queue final : Native::TX_QUEUE
 {
     static_assert(sizeof(Message) % sizeof(wordSize) == 0, "Queue message size must be a multiple of word size.");
@@ -32,7 +32,7 @@ class Queue final : Native::TX_QUEUE
     /// \param size max num of messages in queue.
     /// \param sendNotifyCallback function to call when a message sent to queue.
     /// The Notifycallback is not allowed to call any ThreadX API with a suspension option.
-    explicit Queue(const std::string_view name, Allocator &allocator, const Ulong size, const NotifyCallback &sendNotifyCallback = {})
+    explicit Queue(const std::string_view name, Allocator &allocator, const NotifyCallback &sendNotifyCallback = {})
         requires(sizeof(typename Allocator::value_type) == sizeof(std::byte));
 
     ~Queue();
@@ -103,14 +103,14 @@ class Queue final : Native::TX_QUEUE
     const NotifyCallback m_sendNotifyCallback;
 };
 
-template <typename Message, StdAllocator Allocator>
-Queue<Message, Allocator>::Queue(const std::string_view name, Allocator &allocator, const Ulong size, const NotifyCallback &sendNotifyCallback)
+template <typename Message, Ulong Size, StdAllocator Allocator>
+Queue<Message, Size, Allocator>::Queue(const std::string_view name, Allocator &allocator, const NotifyCallback &sendNotifyCallback)
     requires(sizeof(typename Allocator::value_type) == sizeof(std::byte))
     : Native::TX_QUEUE{}, m_allocator{allocator}, m_sendNotifyCallback{std::move(sendNotifyCallback)}
 {
     using namespace Native;
     [[maybe_unused]] Error error{tx_queue_create(this, const_cast<char *>(name.data()), sizeof(Message) / sizeof(wordSize),
-                                                 m_allocator.allocate(size * sizeof(Message)), size * sizeof(Message))};
+                                                 m_allocator.allocate(Size * sizeof(Message)), Size * sizeof(Message))};
     assert(error == Error::success);
 
     if (m_sendNotifyCallback)
@@ -120,62 +120,62 @@ Queue<Message, Allocator>::Queue(const std::string_view name, Allocator &allocat
     }
 }
 
-template <typename Message, StdAllocator Allocator>
-Queue<Message, Allocator>::~Queue()
+template <typename Message, Ulong Size, StdAllocator Allocator>
+Queue<Message, Size, Allocator>::~Queue()
 {
     [[maybe_unused]] Error error{tx_queue_delete(this)};
     assert(error == Error::success);
 
-    m_allocator.deallocate(reinterpret_cast<Allocator::value_type *>(tx_queue_start), tx_queue_capacity * sizeof(Message));
+    m_allocator.deallocate(reinterpret_cast<Allocator::value_type *>(tx_queue_start), Size * sizeof(Message));
 }
 
-template <typename Message, StdAllocator Allocator>
-consteval auto Queue<Message, Allocator>::messageSize() -> size_t
+template <typename Message, Ulong Size, StdAllocator Allocator>
+consteval auto Queue<Message, Size, Allocator>::messageSize() -> size_t
 {
     return sizeof(Message);
 }
 
-template <typename Message, StdAllocator Allocator>
-auto Queue<Message, Allocator>::full() -> Uint
+template <typename Message, Ulong Size, StdAllocator Allocator>
+auto Queue<Message, Size, Allocator>::full() -> Uint
 {
     return tx_queue_available_storage == 0;
 }
 
-template <typename Message, StdAllocator Allocator>
-auto Queue<Message, Allocator>::empty() -> Uint
+template <typename Message, Ulong Size, StdAllocator Allocator>
+auto Queue<Message, Size, Allocator>::empty() -> Uint
 {
     return tx_queue_enqueued == 0;
 }
 
-template <typename Message, StdAllocator Allocator>
-auto Queue<Message, Allocator>::count() -> Uint
+template <typename Message, Ulong Size, StdAllocator Allocator>
+auto Queue<Message, Size, Allocator>::count() -> Uint
 {
     return tx_queue_enqueued;
 }
 
-template <typename Message, StdAllocator Allocator>
-auto Queue<Message, Allocator>::receive() -> ExpectedMessage
+template <typename Message, Ulong Size, StdAllocator Allocator>
+auto Queue<Message, Size, Allocator>::receive() -> ExpectedMessage
 {
     return tryReceiveFor(TickTimer::waitForever);
 }
 
 // must be used for calls from initialization, timers, and ISRs
-template <typename Message, StdAllocator Allocator>
-auto Queue<Message, Allocator>::tryReceive() -> ExpectedMessage
+template <typename Message, Ulong Size, StdAllocator Allocator>
+auto Queue<Message, Size, Allocator>::tryReceive() -> ExpectedMessage
 {
     return tryReceiveFor(TickTimer::noWait);
 }
 
-template <typename Message, StdAllocator Allocator>
+template <typename Message, Ulong Size, StdAllocator Allocator>
 template <class Clock, typename Duration>
-auto Queue<Message, Allocator>::tryReceiveUntil(const std::chrono::time_point<Clock, Duration> &time) -> ExpectedMessage
+auto Queue<Message, Size, Allocator>::tryReceiveUntil(const std::chrono::time_point<Clock, Duration> &time) -> ExpectedMessage
 {
     return tryReceiveFor(time - Clock::now());
 }
 
-template <typename Message, StdAllocator Allocator>
+template <typename Message, Ulong Size, StdAllocator Allocator>
 template <typename Rep, typename Period>
-auto Queue<Message, Allocator>::tryReceiveFor(const std::chrono::duration<Rep, Period> &duration) -> ExpectedMessage
+auto Queue<Message, Size, Allocator>::tryReceiveFor(const std::chrono::duration<Rep, Period> &duration) -> ExpectedMessage
 {
     Message message;
     if (Error error{tx_queue_receive(this, std::addressof(message), TickTimer::ticks(duration))}; error != Error::success)
@@ -186,22 +186,22 @@ auto Queue<Message, Allocator>::tryReceiveFor(const std::chrono::duration<Rep, P
     return message;
 }
 
-template <typename Message, StdAllocator Allocator>
-auto Queue<Message, Allocator>::send(const Message &message) -> Error
+template <typename Message, Ulong Size, StdAllocator Allocator>
+auto Queue<Message, Size, Allocator>::send(const Message &message) -> Error
 {
     return trySendFor(message, TickTimer::waitForever);
 }
 
 // must be used for calls from initialization, timers, and ISRs
-template <typename Message, StdAllocator Allocator>
-auto Queue<Message, Allocator>::trySend(const Message &message) -> Error
+template <typename Message, Ulong Size, StdAllocator Allocator>
+auto Queue<Message, Size, Allocator>::trySend(const Message &message) -> Error
 {
     return trySendFor(message, TickTimer::noWait);
 }
 
-template <typename Message, StdAllocator Allocator>
+template <typename Message, Ulong Size, StdAllocator Allocator>
 template <class Clock, typename Duration>
-auto Queue<Message, Allocator>::trySendUntil(const Message &message, const std::chrono::time_point<Clock, Duration> &time) -> Error
+auto Queue<Message, Size, Allocator>::trySendUntil(const Message &message, const std::chrono::time_point<Clock, Duration> &time) -> Error
 {
     return trySendFor(message, time - Clock::now());
 }
@@ -210,29 +210,29 @@ auto Queue<Message, Allocator>::trySendUntil(const Message &message, const std::
 /// \param duration
 /// \param message
 /// \return
-template <typename Message, StdAllocator Allocator>
+template <typename Message, Ulong Size, StdAllocator Allocator>
 template <typename Rep, typename Period>
-auto Queue<Message, Allocator>::trySendFor(const Message &message, const std::chrono::duration<Rep, Period> &duration) -> Error
+auto Queue<Message, Size, Allocator>::trySendFor(const Message &message, const std::chrono::duration<Rep, Period> &duration) -> Error
 {
     return Error{tx_queue_send(this, std::addressof(const_cast<Message &>(message)), TickTimer::ticks(duration))};
 }
 
-template <typename Message, StdAllocator Allocator>
-auto Queue<Message, Allocator>::sendFront(const Message &message) -> Error
+template <typename Message, Ulong Size, StdAllocator Allocator>
+auto Queue<Message, Size, Allocator>::sendFront(const Message &message) -> Error
 {
     return trySendFrontFor(message, TickTimer::waitForever);
 }
 
 // must be used for calls from initialization, timers, and ISRs
-template <typename Message, StdAllocator Allocator>
-auto Queue<Message, Allocator>::trySendFront(const Message &message) -> Error
+template <typename Message, Ulong Size, StdAllocator Allocator>
+auto Queue<Message, Size, Allocator>::trySendFront(const Message &message) -> Error
 {
     return trySendFrontFor(message, TickTimer::noWait);
 }
 
-template <typename Message, StdAllocator Allocator>
+template <typename Message, Ulong Size, StdAllocator Allocator>
 template <class Clock, typename Duration>
-auto Queue<Message, Allocator>::trySendFrontUntil(const Message &message, const std::chrono::time_point<Clock, Duration> &time) -> Error
+auto Queue<Message, Size, Allocator>::trySendFrontUntil(const Message &message, const std::chrono::time_point<Clock, Duration> &time) -> Error
 {
     return trySendFrontFor(message, time - Clock::now());
 }
@@ -241,33 +241,33 @@ auto Queue<Message, Allocator>::trySendFrontUntil(const Message &message, const 
 /// \param duration
 /// \param message
 /// \return
-template <typename Message, StdAllocator Allocator>
+template <typename Message, Ulong Size, StdAllocator Allocator>
 template <typename Rep, typename Period>
-auto Queue<Message, Allocator>::trySendFrontFor(const Message &message, const std::chrono::duration<Rep, Period> &duration) -> Error
+auto Queue<Message, Size, Allocator>::trySendFrontFor(const Message &message, const std::chrono::duration<Rep, Period> &duration) -> Error
 {
     return Error{tx_queue_front_send(this, std::addressof(const_cast<Message &>(message)), TickTimer::ticks(duration))};
 }
 
-template <typename Message, StdAllocator Allocator>
-auto Queue<Message, Allocator>::prioritise() -> Error
+template <typename Message, Ulong Size, StdAllocator Allocator>
+auto Queue<Message, Size, Allocator>::prioritise() -> Error
 {
     return Error{tx_queue_prioritize(this)};
 }
 
-template <typename Message, StdAllocator Allocator>
-auto Queue<Message, Allocator>::flush() -> Error
+template <typename Message, Ulong Size, StdAllocator Allocator>
+auto Queue<Message, Size, Allocator>::flush() -> Error
 {
     return Error{tx_queue_flush(this)};
 }
 
-template <typename Message, StdAllocator Allocator>
-auto Queue<Message, Allocator>::name() const -> std::string_view
+template <typename Message, Ulong Size, StdAllocator Allocator>
+auto Queue<Message, Size, Allocator>::name() const -> std::string_view
 {
     return std::string_view{tx_queue_name};
 }
 
-template <typename Message, StdAllocator Allocator>
-auto Queue<Message, Allocator>::sendNotifyCallback(auto queuePtr) -> void
+template <typename Message, Ulong Size, StdAllocator Allocator>
+auto Queue<Message, Size, Allocator>::sendNotifyCallback(auto queuePtr) -> void
 {
     auto &queue{static_cast<Queue &>(*queuePtr)};
     queue.m_sendNotifyCallback(queue);
