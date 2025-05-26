@@ -67,7 +67,7 @@ class Thread final : Native::TX_THREAD
     ///
     /// \param stackErrorNotifyCallback
     /// \return
-    static auto registerStackErrorNotifyCallback(const ErrorCallback &stackErrorNotifyCallback) -> Error;
+    static auto registerStackErrorNotifyCallback(const ErrorCallback stackErrorNotifyCallback) -> Error;
 
     /// Constructor
     /// \param stackSize
@@ -75,8 +75,8 @@ class Thread final : Native::TX_THREAD
     /// \param preamptionThresh
     /// \param timeSlice
     /// \param startType
-    explicit Thread(const std::string_view name, Allocator &allocator, const EntryCallback &entryCallback, const Ulong stackSize = minimumStackSize,
-                    const NotifyCallback &entryExitNotifyCallback = {}, const Uint priority = defaultPriority,
+    explicit Thread(const std::string_view name, Allocator &allocator, const EntryCallback entryCallback, const Ulong stackSize = minimumStackSize,
+                    const NotifyCallback entryExitNotifyCallback = {}, const Uint priority = defaultPriority,
                     const Uint preamptionThresh = Uint{TX_MAX_PRIORITIES}, const Ulong timeSlice = noTimeSlice,
                     const ThreadStartType startType = ThreadStartType::running)
         requires(sizeof(typename Allocator::value_type) == sizeof(std::byte));
@@ -155,7 +155,7 @@ class Thread final : Native::TX_THREAD
 }; // namespace ThreadX
 
 template <StdAllocator Allocator>
-auto Thread<Allocator>::registerStackErrorNotifyCallback(const ErrorCallback &stackErrorNotifyCallback) -> Error
+auto Thread<Allocator>::registerStackErrorNotifyCallback(const ErrorCallback stackErrorNotifyCallback) -> Error
 {
     Error error{tx_thread_stack_error_notify(stackErrorNotifyCallback ? Thread::stackErrorNotifyCallback : nullptr)};
     if (error == Error::success)
@@ -167,8 +167,8 @@ auto Thread<Allocator>::registerStackErrorNotifyCallback(const ErrorCallback &st
 }
 
 template <StdAllocator Allocator>
-Thread<Allocator>::Thread(const std::string_view name, Allocator &allocator, const EntryCallback &entryCallback, const Ulong stackSize,
-                          const NotifyCallback &entryExitNotifyCallback, const Uint priority, const Uint preamptionThresh, const Ulong timeSlice,
+Thread<Allocator>::Thread(const std::string_view name, Allocator &allocator, const EntryCallback entryCallback, const Ulong stackSize,
+                          const NotifyCallback entryExitNotifyCallback, const Uint priority, const Uint preamptionThresh, const Ulong timeSlice,
                           const ThreadStartType startType)
     requires(sizeof(typename Allocator::value_type) == sizeof(std::byte))
     : Native::TX_THREAD{}, m_allocator{allocator}, m_entryCallback{std::move(entryCallback)}, m_entryExitNotifyCallback{std::move(entryExitNotifyCallback)}

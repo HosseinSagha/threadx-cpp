@@ -90,8 +90,8 @@ class Media : ThreadX::Native::FX_MEDIA, MediaBase
 
     // Once initialized by this constructor, the application should call fx_system_date_set and fx_system_time_set to start with an accurate system date and
     // time.
-    explicit Media(const DriverCallback &driverCallback, std::byte *driverInfoPtr = nullptr, const NotifyCallback &openNotifyCallback = {},
-                   const NotifyCallback &closeNotifyCallback = {});
+    explicit Media(const DriverCallback driverCallback, std::byte *driverInfoPtr = nullptr, const NotifyCallback openNotifyCallback = {},
+                   const NotifyCallback closeNotifyCallback = {});
     virtual ~Media();
 
     auto open(const std::string_view name, const FaultTolerantMode mode = FaultTolerantMode::enable) -> Error;
@@ -167,8 +167,8 @@ auto Media<N>::setFileSystemTime() -> Error
 }
 
 template <MediaSectorSize N>
-Media<N>::Media(const DriverCallback &driverCallback, std::byte *driverInfoPtr, const NotifyCallback &openNotifyCallback,
-                const NotifyCallback &closeNotifyCallback)
+Media<N>::Media(const DriverCallback driverCallback, std::byte *driverInfoPtr, const NotifyCallback openNotifyCallback,
+                const NotifyCallback closeNotifyCallback)
     : ThreadX::Native::FX_MEDIA{}, m_driverCallback{std::move(driverCallback)}, m_driverInfoPtr{driverInfoPtr},
       m_openNotifyCallback{std::move(openNotifyCallback)}, m_closeNotifyCallback{std::move(closeNotifyCallback)}
 {

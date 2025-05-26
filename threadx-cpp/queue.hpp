@@ -32,7 +32,7 @@ class Queue final : Native::TX_QUEUE
     /// \param size max num of messages in queue.
     /// \param sendNotifyCallback function to call when a message sent to queue.
     /// The Notifycallback is not allowed to call any ThreadX API with a suspension option.
-    explicit Queue(const std::string_view name, Allocator &allocator, const NotifyCallback &sendNotifyCallback = {})
+    explicit Queue(const std::string_view name, Allocator &allocator, const NotifyCallback sendNotifyCallback = {})
         requires(sizeof(typename Allocator::value_type) == sizeof(std::byte));
 
     ~Queue();
@@ -104,7 +104,7 @@ class Queue final : Native::TX_QUEUE
 };
 
 template <typename Message, Ulong Size, StdAllocator Allocator>
-Queue<Message, Size, Allocator>::Queue(const std::string_view name, Allocator &allocator, const NotifyCallback &sendNotifyCallback)
+Queue<Message, Size, Allocator>::Queue(const std::string_view name, Allocator &allocator, const NotifyCallback sendNotifyCallback)
     requires(sizeof(typename Allocator::value_type) == sizeof(std::byte))
     : Native::TX_QUEUE{}, m_allocator{allocator}, m_sendNotifyCallback{std::move(sendNotifyCallback)}
 {

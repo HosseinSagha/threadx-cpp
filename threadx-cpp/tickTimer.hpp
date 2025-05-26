@@ -53,8 +53,9 @@ class TickTimer final : Native::TX_TIMER
     /// Use CALLLBACK_BIND to pass callback as any other object's member function.
     /// \param type \sa Type
     /// \param activationType \sa ActivationType
-    explicit TickTimer(const std::string_view name, const auto &timeout, const ExpirationCallback &expirationCallback = {}, const Type type = Type::periodic,
-                       const ActivationType activationType = ActivationType::autoActivate);
+    template <typename Rep, typename Period>
+    explicit TickTimer(const std::string_view name, const std::chrono::duration<Rep, Period> &timeout, const ExpirationCallback expirationCallback = {},
+                       const Type type = Type::periodic, const ActivationType activationType = ActivationType::autoActivate);
 
     /// Destructor. deletes the timer.
     ~TickTimer();
@@ -117,8 +118,9 @@ constexpr auto TickTimer::ticks(const std::chrono::duration<Rep, Period> &durati
     return std::chrono::ceil<TickTimer::Duration>(duration).count();
 }
 
-TickTimer::TickTimer(const std::string_view name, const auto &timeout, const ExpirationCallback &expirationCallback, const Type type,
-                     const ActivationType activationType)
+template <typename Rep, typename Period>
+TickTimer::TickTimer(const std::string_view name, const std::chrono::duration<Rep, Period> &timeout, const ExpirationCallback expirationCallback,
+                     const Type type, const ActivationType activationType)
     : Native::TX_TIMER{}, m_timeoutTicks{ticks(timeout)}, m_expirationCallback{std::move(expirationCallback)}, m_id{expirationCallback ? ++m_idCounter : 0},
       m_type{type}, m_activationType{activationType}
 {

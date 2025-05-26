@@ -3,7 +3,7 @@
 
 namespace ThreadX
 {
-EventFlags::EventFlags(const std::string_view name, const NotifyCallback &setNotifyCallback)
+EventFlags::EventFlags(const std::string_view name, const NotifyCallback setNotifyCallback)
     : Native::TX_EVENT_FLAGS_GROUP{}, m_setNotifyCallback{std::move(setNotifyCallback)}
 {
     using namespace Native;
