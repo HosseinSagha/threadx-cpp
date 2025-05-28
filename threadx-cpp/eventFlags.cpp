@@ -45,7 +45,7 @@ auto EventFlags::get(const Bitmask &bitMask, const Option option) -> ExpectedBit
         return expectedBitmask;
     }
 
-    return ExpectedBitmask{};
+    return Bitmask{0UL};
 }
 
 auto EventFlags::waitAll(const Bitmask &bitMask, const Option option) -> ExpectedBitmask
