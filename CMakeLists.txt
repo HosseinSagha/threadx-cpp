@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.27.9)
-get_filename_component(LIB_ID ${CMAKE_CURRENT_LIST_DIR} NAME)
+set(LIB_ID threadx-cpp)
 
 if(GEN_DOCS MATCHES ON)
     set(DOXYGEN_FOUND "NO")
@@ -60,9 +60,9 @@ FetchContent_Declare(levelx
                      GIT_TAG ${LEVELX_VER}
                      SYSTEM)
 
-set(TX_USER_FILE "../tx_user.h")
-set(FX_USER_FILE "../fx_user.h")
-set(LX_USER_FILE "../lx_user.h")
+set(TX_USER_FILE "${CMAKE_BINARY_DIR}/tx_user.h")
+set(FX_USER_FILE "${CMAKE_BINARY_DIR}/fx_user.h")
+set(LX_USER_FILE "${CMAKE_BINARY_DIR}/lx_user.h")
 
 FetchContent_MakeAvailable(threadx levelx)
 set(THREADX_ARCH ${FILEX_ARCH})
