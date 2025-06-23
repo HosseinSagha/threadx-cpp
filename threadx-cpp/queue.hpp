@@ -14,7 +14,7 @@ namespace ThreadX
 template <typename Message, Ulong Size, StdAllocator Allocator>
 class Queue final : Native::TX_QUEUE
 {
-    static_assert(sizeof(Message) % sizeof(wordSize) == 0, "Queue message size must be a multiple of word size.");
+    static_assert(sizeof(Message) % wordSize == 0, "Queue message size must be a multiple of word size.");
 
   public:
     /// external Notifycallback type
@@ -109,7 +109,7 @@ Queue<Message, Size, Allocator>::Queue(const std::string_view name, Allocator &a
     : Native::TX_QUEUE{}, m_allocator{allocator}, m_sendNotifyCallback{std::move(sendNotifyCallback)}
 {
     using namespace Native;
-    [[maybe_unused]] Error error{tx_queue_create(this, const_cast<char *>(name.data()), sizeof(Message) / sizeof(wordSize),
+    [[maybe_unused]] Error error{tx_queue_create(this, const_cast<char *>(name.data()), sizeof(Message) / wordSize,
                                                  m_allocator.allocate(Size * sizeof(Message)), Size * sizeof(Message))};
     assert(error == Error::success);
 
