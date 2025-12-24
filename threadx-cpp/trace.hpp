@@ -61,8 +61,7 @@ enum class TraceEvent : Ulong
 }
 
 ///
-template <Ulong Size>
-class Trace
+template <Ulong Size> class Trace
 {
   public:
     Trace &operator=(const Trace &) = delete;
@@ -88,63 +87,61 @@ class Trace
 
     static auto isrExitInsert(const Ulong isrID) -> void;
 
-    static auto userEventInsert(const Ulong eventID, const Ulong infoField1, const Ulong infoField2, const Ulong infoField3, const Ulong infoField4) -> Error;
+    static auto userEventInsert(const Ulong eventID,
+                                const Ulong infoField1,
+                                const Ulong infoField2,
+                                const Ulong infoField3,
+                                const Ulong infoField4) -> Error;
 
   private:
     std::array<Uchar, Size> m_trace{};
 };
 
-template <Ulong Size>
-Trace<Size>::Trace(const Ulong registryEntries)
+template <Ulong Size> Trace<Size>::Trace(const Ulong registryEntries)
 {
     [[maybe_unused]] Error error{Native::tx_trace_enable(m_trace.data(), Size, registryEntries)};
     assert(error == Error::success);
 }
 
-template <Ulong Size>
-auto Trace<Size>::eventFilter(const Ulong eventBits) -> Error
+template <Ulong Size> auto Trace<Size>::eventFilter(const Ulong eventBits) -> Error
 {
     return Error{Native::tx_trace_event_filter(eventBits)};
 }
 
-template <Ulong Size>
-auto Trace<Size>::eventUnfilter(const Ulong eventBits) -> Error
+template <Ulong Size> auto Trace<Size>::eventUnfilter(const Ulong eventBits) -> Error
 {
     return Error{Native::tx_trace_event_unfilter(eventBits)};
 }
 
-template <Ulong Size>
-auto Trace<Size>::eventFilter(const TraceEvent event) -> Error
+template <Ulong Size> auto Trace<Size>::eventFilter(const TraceEvent event) -> Error
 {
     return Error{Native::tx_trace_event_filter(std::to_underlying(event))};
 }
 
-template <Ulong Size>
-auto Trace<Size>::eventUnfilter(const TraceEvent event) -> Error
+template <Ulong Size> auto Trace<Size>::eventUnfilter(const TraceEvent event) -> Error
 {
     return Error{Native::tx_trace_event_unfilter(std::to_underlying(event))};
 }
 
-template <Ulong Size>
-auto Trace<Size>::disable() -> Error
+template <Ulong Size> auto Trace<Size>::disable() -> Error
 {
     return Error{Native::tx_trace_disable()};
 }
 
-template <Ulong Size>
-auto Trace<Size>::isrEnterInsert(const Ulong isrID) -> void
+template <Ulong Size> auto Trace<Size>::isrEnterInsert(const Ulong isrID) -> void
 {
     Native::tx_trace_isr_enter_insert(isrID);
 }
 
-template <Ulong Size>
-auto Trace<Size>::isrExitInsert(const Ulong isrID) -> void
+template <Ulong Size> auto Trace<Size>::isrExitInsert(const Ulong isrID) -> void
 {
     Native::tx_trace_isr_exit_insert(isrID);
 }
 
 template <Ulong Size>
-auto Trace<Size>::userEventInsert(const Ulong eventID, const Ulong infoField1, const Ulong infoField2, const Ulong infoField3, const Ulong infoField4) -> Error
+auto Trace<Size>::userEventInsert(
+    const Ulong eventID, const Ulong infoField1, const Ulong infoField2, const Ulong infoField3, const Ulong infoField4)
+    -> Error
 {
     assert(eventID >= TX_TRACE_USER_EVENT_START and eventID <= TX_TRACE_USER_EVENT_END);
     return Error{Native::tx_trace_user_event_insert(eventID, infoField1, infoField2, infoField3, infoField4)};

@@ -4,7 +4,8 @@
 namespace ThreadX
 {
 EventFlags::EventFlags(const std::string_view name, const NotifyCallback setNotifyCallback)
-    : Native::TX_EVENT_FLAGS_GROUP{}, m_setNotifyCallback{std::move(setNotifyCallback)}
+    : Native::TX_EVENT_FLAGS_GROUP{},
+      m_setNotifyCallback{std::move(setNotifyCallback)}
 {
     using namespace Native;
     [[maybe_unused]] Error error{tx_event_flags_create(this, const_cast<char *>(name.data()))};
@@ -40,7 +41,8 @@ auto EventFlags::get(const Option option) -> ExpectedBitmask
 
 auto EventFlags::get(const Bitmask &bitMask, const Option option) -> ExpectedBitmask
 {
-    if (auto expectedBitmask{waitAllFor(bitMask, TickTimer::noWait, option)}; expectedBitmask or expectedBitmask.error() != Error::noEvents)
+    if (auto expectedBitmask{waitAllFor(bitMask, TickTimer::noWait, option)};
+        expectedBitmask or expectedBitmask.error() != Error::noEvents)
     {
         return expectedBitmask;
     }

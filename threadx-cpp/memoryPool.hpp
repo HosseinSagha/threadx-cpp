@@ -10,14 +10,12 @@ namespace ThreadX
 {
 /// byte memory pool from which to allocate the thread stacks and queues.
 /// \tparam Size size of byte pool in bytes
-template <Ulong Size>
-class BytePool final : Native::TX_BYTE_POOL
+template <Ulong Size> class BytePool final : Native::TX_BYTE_POOL
 {
     static_assert(Size % wordSize == 0, "Pool size must be a multiple of word size.");
 
   public:
-    template <class Pool, typename T>
-    friend class Allocator;
+    template <class Pool, typename T> friend class Allocator;
 
     [[nodiscard]] static consteval auto isBytePool() -> bool;
 
@@ -34,41 +32,38 @@ class BytePool final : Native::TX_BYTE_POOL
     alignas(Ulong) std::array<std::byte, Size> m_pool{};
 };
 
-template <Ulong Size>
-consteval auto BytePool<Size>::isBytePool() -> bool
+template <Ulong Size> consteval auto BytePool<Size>::isBytePool() -> bool
 {
     return true;
 }
 
 template <Ulong Size>
-BytePool<Size>::BytePool(const std::string_view name) : Native::TX_BYTE_POOL{}
+BytePool<Size>::BytePool(const std::string_view name)
+    : Native::TX_BYTE_POOL{}
 {
     using namespace Native;
-    [[maybe_unused]] Error error{tx_byte_pool_create(this, const_cast<char *>(name.data()), m_pool.data(), m_pool.size())};
+    [[maybe_unused]] Error error{
+        tx_byte_pool_create(this, const_cast<char *>(name.data()), m_pool.data(), m_pool.size())};
     assert(error == Error::success);
 }
 
-template <Ulong Size>
-BytePool<Size>::~BytePool()
+template <Ulong Size> BytePool<Size>::~BytePool()
 {
     [[maybe_unused]] Error error{tx_byte_pool_delete(this)};
     assert(error == Error::success);
 }
 
-template <Ulong Size>
-auto BytePool<Size>::prioritise() -> Error
+template <Ulong Size> auto BytePool<Size>::prioritise() -> Error
 {
     return Error{tx_byte_pool_prioritize(this)};
 }
 
-template <Ulong Size>
-auto BytePool<Size>::name() const -> std::string_view
+template <Ulong Size> auto BytePool<Size>::name() const -> std::string_view
 {
     return std::string_view{tx_byte_pool_name};
 }
 
-template <Ulong BlockSize, Ulong Blocks>
-class BlockPool final : Native::TX_BLOCK_POOL
+template <Ulong BlockSize, Ulong Blocks> class BlockPool final : Native::TX_BLOCK_POOL
 {
   public:
     [[nodiscard]] static consteval auto blockSize() -> Ulong;
@@ -92,41 +87,38 @@ class BlockPool final : Native::TX_BLOCK_POOL
     alignas(Ulong) std::array<std::byte, Size> m_pool{};
 };
 
-template <Ulong BlockSize, Ulong Blocks>
-consteval auto BlockPool<BlockSize, Blocks>::blockSize() -> Ulong
+template <Ulong BlockSize, Ulong Blocks> consteval auto BlockPool<BlockSize, Blocks>::blockSize() -> Ulong
 {
     return BlockSize;
 }
 
-template <Ulong BlockSize, Ulong Blocks>
-consteval auto BlockPool<BlockSize, Blocks>::isBytePool() -> bool
+template <Ulong BlockSize, Ulong Blocks> consteval auto BlockPool<BlockSize, Blocks>::isBytePool() -> bool
 {
     return false;
 }
 
 template <Ulong BlockSize, Ulong Blocks>
-BlockPool<BlockSize, Blocks>::BlockPool(const std::string_view name) : Native::TX_BLOCK_POOL{}
+BlockPool<BlockSize, Blocks>::BlockPool(const std::string_view name)
+    : Native::TX_BLOCK_POOL{}
 {
     using namespace Native;
-    [[maybe_unused]] Error error{tx_block_pool_create(this, const_cast<char *>(name.data()), BlockSize, m_pool.data(), m_pool.size())};
+    [[maybe_unused]] Error error{
+        tx_block_pool_create(this, const_cast<char *>(name.data()), BlockSize, m_pool.data(), m_pool.size())};
     assert(error == Error::success);
 }
 
-template <Ulong BlockSize, Ulong Blocks>
-BlockPool<BlockSize, Blocks>::~BlockPool()
+template <Ulong BlockSize, Ulong Blocks> BlockPool<BlockSize, Blocks>::~BlockPool()
 {
     [[maybe_unused]] Error error{tx_block_pool_delete(this)};
     assert(error == Error::success);
 }
 
-template <Ulong BlockSize, Ulong Blocks>
-auto BlockPool<BlockSize, Blocks>::prioritise() -> Error
+template <Ulong BlockSize, Ulong Blocks> auto BlockPool<BlockSize, Blocks>::prioritise() -> Error
 {
     return Error{tx_block_pool_prioritize(this)};
 }
 
-template <Ulong BlockSize, Ulong Blocks>
-auto BlockPool<BlockSize, Blocks>::name() const -> std::string_view
+template <Ulong BlockSize, Ulong Blocks> auto BlockPool<BlockSize, Blocks>::name() const -> std::string_view
 {
     return std::string_view{tx_block_pool_name};
 }

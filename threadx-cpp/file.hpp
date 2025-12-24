@@ -11,8 +11,7 @@
 
 namespace FileX
 {
-template <MediaSectorSize N>
-class Media;
+template <MediaSectorSize N> class Media;
 
 enum class OpenOption : ThreadX::Uint
 {
@@ -49,7 +48,10 @@ class File final : ThreadX::Native::FX_FILE
     using NotifyCallback = std::function<void(File &)>;
 
     template <MediaSectorSize N>
-    explicit File(const std::string_view fileName, Media<N> &media, const OpenOption option = OpenOption::read, const NotifyCallback writeNotifyCallback = {});
+    explicit File(const std::string_view fileName,
+                  Media<N> &media,
+                  const OpenOption option = OpenOption::read,
+                  const NotifyCallback writeNotifyCallback = {});
     ~File();
 
     auto allocate(const ThreadX::Ulong64 size, const AllocateOption option = AllocateOption::strict) -> ExpectedUlong64;
@@ -68,11 +70,16 @@ class File final : ThreadX::Native::FX_FILE
 };
 
 template <MediaSectorSize N>
-File::File(const std::string_view fileName, Media<N> &media, const OpenOption option, const NotifyCallback writeNotifyCallback)
-    : ThreadX::Native::FX_FILE{}, m_writeNotifyCallback{std::move(writeNotifyCallback)}
+File::File(const std::string_view fileName,
+           Media<N> &media,
+           const OpenOption option,
+           const NotifyCallback writeNotifyCallback)
+    : ThreadX::Native::FX_FILE{},
+      m_writeNotifyCallback{std::move(writeNotifyCallback)}
 {
     using namespace ThreadX::Native;
-    [[maybe_unused]] Error error{fx_file_open(std::addressof(media), this, const_cast<char *>(fileName.data()), std::to_underlying(option))};
+    [[maybe_unused]] Error error{
+        fx_file_open(std::addressof(media), this, const_cast<char *>(fileName.data()), std::to_underlying(option))};
     assert(error == Error::success);
 
     if (m_writeNotifyCallback)

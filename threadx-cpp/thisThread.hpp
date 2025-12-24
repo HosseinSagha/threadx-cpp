@@ -20,14 +20,12 @@ auto suspend() -> Error;
 
 /// causes the calling thread to suspend for the specified time
 /// \param duration
-template <typename Rep, typename Period>
-auto sleepFor(const std::chrono::duration<Rep, Period> &duration) -> Error
+template <typename Rep, typename Period> auto sleepFor(const std::chrono::duration<Rep, Period> &duration) -> Error
 {
     return Error{Native::tx_thread_sleep(TickTimer::ticks(duration))};
 }
 
-template <class Clock, typename Duration>
-auto sleepUntil(const std::chrono::time_point<Clock, Duration> &time) -> Error
+template <class Clock, typename Duration> auto sleepUntil(const std::chrono::time_point<Clock, Duration> &time) -> Error
 {
     return sleepFor(time - Clock::now());
 }

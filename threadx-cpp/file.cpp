@@ -26,7 +26,8 @@ auto File::allocate(const ThreadX::Ulong64 size, const AllocateOption option) ->
     else
     {
         ThreadX::Ulong64 allocatedSize{};
-        if (error = Error{fx_file_extended_best_effort_allocate(this, size, std::addressof(allocatedSize))}; error == Error::success)
+        if (error = Error{fx_file_extended_best_effort_allocate(this, size, std::addressof(allocatedSize))};
+            error == Error::success)
         {
             return allocatedSize;
         }
@@ -70,7 +71,8 @@ auto File::write(const std::string_view str) -> Error
 auto File::read(const std::span<std::byte> buffer) -> ExpectedUlong
 {
     ThreadX::Ulong actualSize{};
-    if (Error error{fx_file_read(this, buffer.data(), buffer.size(), std::addressof(actualSize))}; error != Error::success)
+    if (Error error{fx_file_read(this, buffer.data(), buffer.size(), std::addressof(actualSize))};
+        error != Error::success)
     {
         return std::unexpected(error);
     }

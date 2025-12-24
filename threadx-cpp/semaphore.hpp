@@ -9,8 +9,7 @@
 
 namespace ThreadX
 {
-template <Ulong Ceiling = std::numeric_limits<Ulong>::max()>
-class CountingSemaphore final : Native::TX_SEMAPHORE
+template <Ulong Ceiling = std::numeric_limits<Ulong>::max()> class CountingSemaphore final : Native::TX_SEMAPHORE
 {
   public:
     using NotifyCallback = std::function<void(CountingSemaphore &)>;
@@ -24,7 +23,9 @@ class CountingSemaphore final : Native::TX_SEMAPHORE
 
     /// Constructor
     /// \param name name of the semaphore.
-    explicit CountingSemaphore(const std::string_view name, const Ulong initialCount = 0, const NotifyCallback releaseNotifyCallback = {});
+    explicit CountingSemaphore(const std::string_view name,
+                               const Ulong initialCount = 0,
+                               const NotifyCallback releaseNotifyCallback = {});
     ~CountingSemaphore();
 
     /// attempts to retrieve an instance (a single count) from the specified counting semaphore.
@@ -42,9 +43,9 @@ class CountingSemaphore final : Native::TX_SEMAPHORE
     template <typename Rep, typename Period>
     auto tryAcquireFor(const std::chrono::duration<Rep, Period> &duration) -> Error;
 
-    ///  puts a number of instances into the specified counting semaphore, which in reality increments the counting semaphore by
-    ///  count value. If the counting semaphore's current value is greater than or equal to the specified ceiling, the instance
-    ///  will not be put and a TX_CEILING_EXCEEDED error will be returned.
+    ///  puts a number of instances into the specified counting semaphore, which in reality increments the counting
+    ///  semaphore by count value. If the counting semaphore's current value is greater than or equal to the specified
+    ///  ceiling, the instance will not be put and a TX_CEILING_EXCEEDED error will be returned.
     /// \param count
     auto release(Ulong count) -> Error;
 
@@ -69,8 +70,7 @@ class CountingSemaphore final : Native::TX_SEMAPHORE
     const NotifyCallback m_releaseNotifyCallback;
 };
 
-template <Ulong Ceiling>
-consteval auto CountingSemaphore<Ceiling>::max() const -> Ulong
+template <Ulong Ceiling> consteval auto CountingSemaphore<Ceiling>::max() const -> Ulong
 {
     return Ceiling;
 }
@@ -79,8 +79,11 @@ consteval auto CountingSemaphore<Ceiling>::max() const -> Ulong
 /// \param initialCount
 /// \param releaseNotifyCallback The Notifycallback is not allowed to call any ThreadX API with a suspension option.
 template <Ulong Ceiling>
-CountingSemaphore<Ceiling>::CountingSemaphore(const std::string_view name, const Ulong initialCount, const NotifyCallback releaseNotifyCallback)
-    : Native::TX_SEMAPHORE{}, m_releaseNotifyCallback{std::move(releaseNotifyCallback)}
+CountingSemaphore<Ceiling>::CountingSemaphore(const std::string_view name,
+                                              const Ulong initialCount,
+                                              const NotifyCallback releaseNotifyCallback)
+    : Native::TX_SEMAPHORE{},
+      m_releaseNotifyCallback{std::move(releaseNotifyCallback)}
 {
     assert(initialCount <= Ceiling);
 
@@ -95,21 +98,18 @@ CountingSemaphore<Ceiling>::CountingSemaphore(const std::string_view name, const
     }
 }
 
-template <Ulong Ceiling>
-CountingSemaphore<Ceiling>::~CountingSemaphore()
+template <Ulong Ceiling> CountingSemaphore<Ceiling>::~CountingSemaphore()
 {
     [[maybe_unused]] Error error{tx_semaphore_delete(this)};
     assert(error == Error::success);
 }
 
-template <Ulong Ceiling>
-auto CountingSemaphore<Ceiling>::acquire() -> Error
+template <Ulong Ceiling> auto CountingSemaphore<Ceiling>::acquire() -> Error
 {
     return tryAcquireFor(TickTimer::waitForever);
 }
 
-template <Ulong Ceiling>
-auto CountingSemaphore<Ceiling>::tryAcquire() -> Error
+template <Ulong Ceiling> auto CountingSemaphore<Ceiling>::tryAcquire() -> Error
 {
     return tryAcquireFor(TickTimer::noWait);
 }
@@ -128,8 +128,7 @@ auto CountingSemaphore<Ceiling>::tryAcquireFor(const std::chrono::duration<Rep, 
     return Error{tx_semaphore_get(this, TickTimer::ticks(duration))};
 }
 
-template <Ulong Ceiling>
-auto CountingSemaphore<Ceiling>::release(Ulong count) -> Error
+template <Ulong Ceiling> auto CountingSemaphore<Ceiling>::release(Ulong count) -> Error
 {
     while (count > 0)
     {
@@ -144,32 +143,27 @@ auto CountingSemaphore<Ceiling>::release(Ulong count) -> Error
     return Error::success;
 }
 
-template <Ulong Ceiling>
-auto CountingSemaphore<Ceiling>::release() -> Error
+template <Ulong Ceiling> auto CountingSemaphore<Ceiling>::release() -> Error
 {
     return Error{tx_semaphore_ceiling_put(this, Ceiling)};
 }
 
-template <Ulong Ceiling>
-auto CountingSemaphore<Ceiling>::prioritise() -> Error
+template <Ulong Ceiling> auto CountingSemaphore<Ceiling>::prioritise() -> Error
 {
     return Error{tx_semaphore_prioritize(this)};
 }
 
-template <Ulong Ceiling>
-auto CountingSemaphore<Ceiling>::name() const -> std::string_view
+template <Ulong Ceiling> auto CountingSemaphore<Ceiling>::name() const -> std::string_view
 {
     return std::string_view{tx_semaphore_name};
 }
 
-template <Ulong Ceiling>
-auto CountingSemaphore<Ceiling>::count() const -> Ulong
+template <Ulong Ceiling> auto CountingSemaphore<Ceiling>::count() const -> Ulong
 {
     return tx_semaphore_count;
 }
 
-template <Ulong Ceiling>
-auto CountingSemaphore<Ceiling>::releaseNotifyCallback(auto notifySemaphorePtr) -> void
+template <Ulong Ceiling> auto CountingSemaphore<Ceiling>::releaseNotifyCallback(auto notifySemaphorePtr) -> void
 {
     auto &semaphore{static_cast<CountingSemaphore &>(*notifySemaphorePtr)};
     semaphore.m_releaseNotifyCallback(semaphore);
