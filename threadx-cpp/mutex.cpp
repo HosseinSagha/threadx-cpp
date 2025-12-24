@@ -37,7 +37,7 @@ auto Mutex::unlock() -> Error
     return Error{tx_mutex_put(this)};
 }
 
-auto Mutex::name() const -> std::string_view
+[[gnu::pure]] auto Mutex::name() const -> std::string_view
 {
     return std::string_view{tx_mutex_name};
 }
@@ -47,7 +47,7 @@ auto Mutex::prioritise() -> Error
     return Error{tx_mutex_prioritize(this)};
 }
 
-auto Mutex::lockingThreadID() const -> uintptr_t
+[[gnu::pure]] auto Mutex::lockingThreadID() const -> uintptr_t
 {
     return uintptr_t(tx_mutex_owner);
 }

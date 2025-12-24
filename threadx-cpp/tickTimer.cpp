@@ -30,12 +30,12 @@ auto TickTimer::reset() -> Error
     return reset(Duration{m_timeoutTicks}, m_type, m_activationType);
 }
 
-auto TickTimer::id() const -> size_t
+[[gnu::pure]] auto TickTimer::id() const -> size_t
 {
     return m_id;
 }
 
-auto TickTimer::name() const -> std::string_view
+[[gnu::pure]] auto TickTimer::name() const -> std::string_view
 {
     return std::string_view{tx_timer_name};
 }

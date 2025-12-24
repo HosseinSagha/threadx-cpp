@@ -54,4 +54,4 @@ auto start() -> void;
 [[nodiscard]] auto inIsr() -> bool;
 
 [[nodiscard]] auto state() -> State;
-}; // namespace ThreadX::Kernel
+} // namespace ThreadX::Kernel

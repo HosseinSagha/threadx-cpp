@@ -60,4 +60,4 @@ auto state() -> State
     using namespace Native;
     return (TX_THREAD_GET_SYSTEM_STATE() < TX_INITIALIZE_IN_PROGRESS) ? State::running : State::uninitialised;
 }
-}; // namespace ThreadX::Kernel
+} // namespace ThreadX::Kernel

@@ -58,7 +58,7 @@ auto EventFlags::waitAny(const Bitmask &bitMask, const Option option) -> Expecte
     return waitAnyFor(bitMask, TickTimer::waitForever, option);
 }
 
-auto EventFlags::name() const -> std::string_view
+[[gnu::pure]] auto EventFlags::name() const -> std::string_view
 {
     return tx_event_flags_group_name;
 }

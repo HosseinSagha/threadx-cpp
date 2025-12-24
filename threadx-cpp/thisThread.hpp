@@ -31,4 +31,4 @@ auto sleepUntil(const std::chrono::time_point<Clock, Duration> &time) -> Error
 {
     return sleepFor(time - Clock::now());
 }
-}; // namespace ThreadX::ThisThread
+} // namespace ThreadX::ThisThread
