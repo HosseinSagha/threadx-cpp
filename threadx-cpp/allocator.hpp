@@ -3,6 +3,7 @@
 #include "memoryPool.hpp"
 #include "txCommon.hpp"
 #include <cassert>
+#include <limits>
 
 namespace ThreadX
 {
@@ -127,8 +128,10 @@ auto Allocator<Pool, T>::deallocate(T *const allocationPtr, [[maybe_unused]] con
     assert(error == Error::success);
 }
 
-template <class T, class U> auto operator==(const Allocator<T> &lhs, const Allocator<U> &rhs) -> bool
+template <class Pool1, typename T1, class Pool2, typename T2>
+auto operator==(const Allocator<Pool1, T1> &lhs, const Allocator<Pool2, T2> &rhs) -> bool
 {
-    return std::addressof(lhs.m_pool) == std::addressof(rhs.m_pool) and T::value_type == U::value_type;
+    return std::addressof(lhs.m_pool) == std::addressof(rhs.m_pool) and 
+           std::is_same_v<typename Allocator<Pool1, T1>::value_type, typename Allocator<Pool2, T2>::value_type>;
 }
 } // namespace ThreadX

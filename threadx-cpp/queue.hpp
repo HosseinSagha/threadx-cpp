@@ -36,11 +36,11 @@ template <typename Message, Ulong Size, StdAllocator Allocator> class Queue fina
 
     ~Queue();
 
-    auto full() -> Uint;
+    [[nodiscard]] auto full() const -> bool;
 
-    auto empty() -> Uint;
+    [[nodiscard]] auto empty() const -> bool;
 
-    auto count() -> Uint;
+    [[nodiscard]] auto count() const -> Uint;
 
     auto receive() -> ExpectedMessage;
 
@@ -140,17 +140,20 @@ consteval auto Queue<Message, Size, Allocator>::messageSize() -> size_t
     return sizeof(Message);
 }
 
-template <typename Message, Ulong Size, StdAllocator Allocator> auto Queue<Message, Size, Allocator>::full() -> Uint
+template <typename Message, Ulong Size, StdAllocator Allocator>
+auto Queue<Message, Size, Allocator>::full() const -> bool
 {
     return tx_queue_available_storage == 0;
 }
 
-template <typename Message, Ulong Size, StdAllocator Allocator> auto Queue<Message, Size, Allocator>::empty() -> Uint
+template <typename Message, Ulong Size, StdAllocator Allocator>
+auto Queue<Message, Size, Allocator>::empty() const -> bool
 {
     return tx_queue_enqueued == 0;
 }
 
-template <typename Message, Ulong Size, StdAllocator Allocator> auto Queue<Message, Size, Allocator>::count() -> Uint
+template <typename Message, Ulong Size, StdAllocator Allocator>
+auto Queue<Message, Size, Allocator>::count() const -> Uint
 {
     return tx_queue_enqueued;
 }
@@ -221,6 +224,7 @@ template <typename Rep, typename Period>
 auto Queue<Message, Size, Allocator>::trySendFor(const Message &message,
                                                  const std::chrono::duration<Rep, Period> &duration) -> Error
 {
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-const-cast) - ThreadX API requires non-const pointer but doesn't modify for send
     return Error{tx_queue_send(this, std::addressof(const_cast<Message &>(message)), TickTimer::ticks(duration))};
 }
 
@@ -254,6 +258,7 @@ template <typename Rep, typename Period>
 auto Queue<Message, Size, Allocator>::trySendFrontFor(const Message &message,
                                                       const std::chrono::duration<Rep, Period> &duration) -> Error
 {
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-const-cast) - ThreadX API requires non-const pointer but doesn't modify for send
     return Error{tx_queue_front_send(this, std::addressof(const_cast<Message &>(message)), TickTimer::ticks(duration))};
 }
 

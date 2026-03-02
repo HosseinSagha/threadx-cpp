@@ -24,6 +24,11 @@ auto suspend() -> Error
 
 auto name() -> std::string_view
 {
-    return std::string_view{Native::tx_thread_identify()->tx_thread_name};
+    if (auto *threadPtr{Native::tx_thread_identify()})
+    {
+        return std::string_view{threadPtr->tx_thread_name};
+    }
+
+    return std::string_view{}; // Called from ISR or no current thread
 }
 } // namespace ThreadX::ThisThread

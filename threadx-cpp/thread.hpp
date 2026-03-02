@@ -19,7 +19,7 @@ enum class ThreadState : Uint
     sleep,
     queueSusp,
     SemaphoreSusp,
-    evenyFlag,
+    eventFlag,
     blockMemory,
     byteMemory,
     ioDriver,
@@ -288,7 +288,7 @@ template <StdAllocator Allocator> auto Thread<Allocator>::preemption() const -> 
 
 template <StdAllocator Allocator> auto Thread<Allocator>::priority(const auto priority) -> Error
 {
-    Uint oldPriority;
+    Uint oldPriority{};
     return Error{tx_thread_priority_change(this, priority, std::addressof(oldPriority))};
 }
 
@@ -299,7 +299,7 @@ template <StdAllocator Allocator> auto Thread<Allocator>::priority() const -> Ui
 
 template <StdAllocator Allocator> auto Thread<Allocator>::timeSlice(const auto timeSlice) -> Error
 {
-    Ulong oldTimeSlice;
+    Ulong oldTimeSlice{};
     return Error{tx_thread_time_slice_change(this, timeSlice, std::addressof(oldTimeSlice))};
 }
 

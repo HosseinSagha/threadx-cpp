@@ -1,4 +1,5 @@
 #include "eventFlags.hpp"
+#include <cassert>
 #include <utility>
 
 namespace ThreadX

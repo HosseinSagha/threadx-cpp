@@ -65,6 +65,7 @@ auto File::write(const std::span<std::byte> data) -> Error
 
 auto File::write(const std::string_view str) -> Error
 {
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-const-cast) - FileX API requires non-const pointer
     return Error{fx_file_write(this, const_cast<char *>(str.data()), str.size())};
 }
 

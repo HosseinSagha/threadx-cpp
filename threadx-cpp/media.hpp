@@ -23,7 +23,7 @@ enum class MediaSectorType : ThreadX::Uint
     unknown = FX_UNKNOWN_SECTOR,
     boot = FX_BOOT_SECTOR,
     fat = FX_FAT_SECTOR,
-    dirctory = FX_DIRECTORY_SECTOR,
+    directory = FX_DIRECTORY_SECTOR,
     data = FX_DATA_SECTOR
 };
 

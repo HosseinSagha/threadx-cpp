@@ -96,7 +96,7 @@ class NorFlash : ThreadX::Native::LX_NOR_FLASH, NorFlashBase
 
     // sectorData must be word aligned. Uchar type because media driver pointers are char*.
     auto writeSector(const ThreadX::Ulong logicalSector,
-                     const std::span<ThreadX::Ulong, norSectorSizeInWord> sectorData) -> Error;
+                     const std::span<const ThreadX::Ulong, norSectorSizeInWord> sectorData) -> Error;
 
     auto releaseSector(const ThreadX::Ulong logicalSector) -> Error;
 
@@ -209,9 +209,10 @@ auto NorFlash<BlockSectors, Driver, CacheSectors>::readSector(const ThreadX::Ulo
 
 template <ThreadX::Uint BlockSectors, NorFlashDriver Driver, ThreadX::Uint CacheSectors>
 auto NorFlash<BlockSectors, Driver, CacheSectors>::writeSector(
-    const ThreadX::Ulong logicalSector, std::span<ThreadX::Ulong, norSectorSizeInWord> sectorData) -> Error
+    const ThreadX::Ulong logicalSector, const std::span<const ThreadX::Ulong, norSectorSizeInWord> sectorData) -> Error
 {
-    return Error{lx_nor_flash_sector_write(this, logicalSector, sectorData.data())};
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-const-cast) - LevelX API requires non-const pointer but doesn't modify source data
+    return Error{lx_nor_flash_sector_write(this, logicalSector, const_cast<ThreadX::Ulong *>(sectorData.data()))};
 }
 
 template <ThreadX::Uint BlockSectors, NorFlashDriver Driver, ThreadX::Uint CacheSectors>

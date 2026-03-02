@@ -54,7 +54,7 @@ enum class Error : Uint
     mutexError,
     notAvailable,
     notOwned,
-    inheretError,
+    inheritError,
     notDone,
     ceilingExceeded,
     invalidCeiling,
