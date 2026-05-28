@@ -1,0 +1,53 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "inputs": [
+        {
+            "id": "svd-dir",
+            "type": "command",
+            "command": "cmake.cacheVariable",
+            "args": {
+                "name": "SVD_DIR",
+            }
+        },
+        {
+            "id": "mcu-device",
+            "type": "command",
+            "command": "cmake.cacheVariable",
+            "args": {
+                "name": "MCU_DEVICE",
+            }
+        }
+    ],
+    "configurations": [
+        {
+            "name": "Launch and Debug Target",
+            "request": "launch",
+            "runToEntryPoint": "main",
+            "cwd": "${workspaceFolder}",
+            "executable": "${command:cmake.launchTargetPath}",
+            "serverpath": "JLinkGDBServerCL",
+            "device": "${input:mcu-device}",
+            "interface": "swd",
+            "type": "cortex-debug",
+            "servertype": "jlink",
+            "svdFile": "${input:svd-dir}/STM32L496.svd",
+            "showDevDebugOutput": "raw"
+        },
+        {
+            "name": "Attach to Running Target",
+            "request": "attach",
+            "cwd": "${workspaceFolder}",
+            "executable": "${command:cmake.launchTargetPath}",
+            "serverpath": "JLinkGDBServerCL",
+            "device": "${input:mcu-device}",
+            "interface": "swd",
+            "type": "cortex-debug",
+            "servertype": "jlink",
+            "svdFile": "${input:svd-dir}/STM32L496.svd",
+            "showDevDebugOutput": "raw"
+        }
+    ]
+}

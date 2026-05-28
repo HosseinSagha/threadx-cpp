@@ -1,7 +1,8 @@
 MIT License
 
+Copyright (c) 2026 Hossein Sagha
+
 Copyright (c) 2020 Benedek Kupper
-Copyright (c) 2025 Hossein Sagha
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal

@@ -1,14 +1,16 @@
-cmake_minimum_required(VERSION 3.27.9)
+cmake_minimum_required(VERSION 3.31.12)
+set(LIB_VERSION 1.0.0)
+
 set(LIB_ID threadx-cpp)
 
-if(GEN_DOCS MATCHES ON)
+if (GEN_DOCS MATCHES ON)
     set(DOXYGEN_FOUND "NO")
     set(DOXYGEN_VERSION "0")
     find_package(Doxygen
-                 COMPONENTS dot
-                 OPTIONAL_COMPONENTS mscgen dia)
+            COMPONENTS dot
+            OPTIONAL_COMPONENTS mscgen dia)
 
-    if(DOXYGEN_FOUND AND ${DOXYGEN_VERSION} STRGREATER_EQUAL "1.9.8")
+    if (DOXYGEN_FOUND AND ${DOXYGEN_VERSION} STRGREATER_EQUAL "1.9.8")
         set(DOXYGEN_PROJECT_NAME "ThreadX Library")
         set(DOXYGEN_PROJECT_BRIEF "")
         set(DOXYGEN_OUTPUT_DIRECTORY ${CMAKE_CURRENT_LIST_DIR}/doc/doxygen)
@@ -19,46 +21,48 @@ if(GEN_DOCS MATCHES ON)
 
         file(GLOB HEADER_FILES CONFIGURE_DEPENDS ${CMAKE_CURRENT_LIST_DIR}/${LIB_ID}/*.hpp)
         doxygen_add_docs(docs ${HEADER_FILES} ALL)
-    endif()
+    endif ()
     return()
-endif()
+endif ()
 
 #azure rtos variables
 string(TOLOWER ${CMAKE_C_COMPILER_ID} COMPILER_ID)
 set(THREADX_TOOLCHAIN ${COMPILER_ID})
 
-if(MCU_ARCH STREQUAL cortex-m0 OR MCU_ARCH STREQUAL cortex-m0plus)
+if (MCU_ARCH STREQUAL cortex-m0 OR MCU_ARCH STREQUAL cortex-m0plus)
     set(THREADX_ARCH "cortex_m0")
     set(FILEX_ARCH ${THREADX_ARCH})
-elseif(MCU_ARCH STREQUAL cortex-m3)
+elseif (MCU_ARCH STREQUAL cortex-m3)
     set(THREADX_ARCH "cortex_m3")
     set(FILEX_ARCH ${THREADX_ARCH})
-elseif(MCU_ARCH STREQUAL cortex-m4)
+elseif (MCU_ARCH STREQUAL cortex-m4)
     set(THREADX_ARCH "cortex_m4")
     set(FILEX_ARCH ${THREADX_ARCH})
-elseif(MCU_ARCH STREQUAL cortex-m7)
+elseif (MCU_ARCH STREQUAL cortex-m7)
     set(THREADX_ARCH "cortex_m7")
     set(FILEX_ARCH ${THREADX_ARCH})
-elseif(MCU_ARCH STREQUAL cortex-m33)
+elseif (MCU_ARCH STREQUAL cortex-m33)
     set(THREADX_ARCH "cortex_m33")
     set(FILEX_ARCH "cortex_m4")
-else()
+else ()
     message(FATAL_ERROR "Unknown architecture")
-endif()
+endif ()
+
+include(FetchContent)
 
 set(THREADX_SUBDIR https://github.com/eclipse-threadx)
 FetchContent_Declare(threadx
-                     GIT_REPOSITORY ${THREADX_SUBDIR}/threadx.git
-                     GIT_TAG ${THREADX_VER}
-                     SYSTEM)
+        GIT_REPOSITORY ${THREADX_SUBDIR}/threadx.git
+        GIT_TAG ${THREADX_VER}
+        SYSTEM)
 FetchContent_Declare(filex
-                     GIT_REPOSITORY ${THREADX_SUBDIR}/filex.git
-                     GIT_TAG ${FILEX_VER}
-                     SYSTEM)
+        GIT_REPOSITORY ${THREADX_SUBDIR}/filex.git
+        GIT_TAG ${FILEX_VER}
+        SYSTEM)
 FetchContent_Declare(levelx
-                     GIT_REPOSITORY ${THREADX_SUBDIR}/levelx.git
-                     GIT_TAG ${LEVELX_VER}
-                     SYSTEM)
+        GIT_REPOSITORY ${THREADX_SUBDIR}/levelx.git
+        GIT_TAG ${LEVELX_VER}
+        SYSTEM)
 
 set(TX_USER_FILE "${CMAKE_BINARY_DIR}/tx_user.h")
 set(FX_USER_FILE "${CMAKE_BINARY_DIR}/fx_user.h")
@@ -75,6 +79,11 @@ set_target_properties(threadx filex levelx PROPERTIES COMPILE_FLAGS -w)
 
 file(GLOB_RECURSE LIB_SOURCES CONFIGURE_DEPENDS ${CMAKE_CURRENT_LIST_DIR}/${LIB_ID}/*.cpp)
 add_library(${LIB_ID} STATIC ${LIB_SOURCES})
+set_target_properties(${LIB_ID} PROPERTIES
+        VERSION ${LIB_VERSION}
+        SOVERSION 1
+)
 
+target_compile_features(${LIB_ID} PUBLIC cxx_std_23)
 target_include_directories(${LIB_ID} INTERFACE ${CMAKE_CURRENT_LIST_DIR})
 target_link_libraries(${LIB_ID} PUBLIC threadx filex levelx)

@@ -1,0 +1,17 @@
+{
+    "configurations": [
+        {
+            "name": "Default",
+            "configurationProvider": "ms-vscode.cmake-tools",
+            "intelliSenseMode": "${default}",
+            "defines": [
+                "true=1",
+                "false=0",
+                "nullptr=NULL",
+                "constexpr=const"
+            ],
+            "mergeConfigurations": true
+        }
+    ],
+    "version": 4
+}
