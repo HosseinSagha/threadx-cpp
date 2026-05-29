@@ -3,9 +3,12 @@
         "*.c": "c",
         "*.h": "c",
         "*.cpp": "cpp",
+        "*.cxx": "cpp",
         "*.hpp": "cpp",
+        "*.ipp": "cpp",
         "*.tcc": "cpp",
         "*.tpp": "cpp",
+        "*.txx": "cpp",
         "*.in": "cpp"
     },
     "files.eol": "\n",

@@ -1,7 +1,6 @@
 #pragma once
 
 #include "txCommon.hpp"
-#include <atomic>
 
 namespace ThreadX::Native
 {
@@ -24,23 +23,25 @@ enum class State
     running
 };
 
-/// Basic lockable class that prevents task and interrupt context switches while locked.
-/// it can either be used as a scoped object or for freely lock/unlucking.
+/// RAII-based critical section for interrupt-safe resource access.
+/// Disables interrupts while locked - use for protecting resources accessed by both
+/// application threads and interrupt handlers.
+///
+/// Note: Interrupts are globally disabled - avoid holding for long periods.
 class CriticalSection final
 {
   public:
-    explicit CriticalSection();
+    CriticalSection();
     ~CriticalSection();
 
-    /// Locks the CPU, preventing thread and interrupt switches.
-    static auto lock() -> void;
-
-    /// Unlocks the CPU, allowing other interrupts and threads to preempt the current execution context.
-    static auto unlock() -> void;
+    CriticalSection(const CriticalSection &) = delete;
+    CriticalSection &operator=(const CriticalSection &) = delete;
+    CriticalSection(CriticalSection &&) = delete;
+    CriticalSection &operator=(CriticalSection &&) = delete;
 
   private:
-    static inline std::atomic_flag m_locked = ATOMIC_FLAG_INIT;
-    static inline Native::TX_INTERRUPT_SAVE_AREA
+    static inline Uint m_nestingCount;
+    static inline Uint m_savedInterruptState;
 };
 
 auto start() -> void;

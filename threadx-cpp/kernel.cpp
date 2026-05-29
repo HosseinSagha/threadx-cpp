@@ -1,4 +1,5 @@
 #include "kernel.hpp"
+#include <cassert>
 
 namespace ThreadX
 {
@@ -12,29 +13,28 @@ namespace ThreadX::Kernel
 {
 CriticalSection::CriticalSection()
 {
-    lock();
+    using namespace Native;
+    TX_INTERRUPT_SAVE_AREA;
+    TX_DISABLE;
+
+    if (m_nestingCount == 0)
+    {
+        m_savedInterruptState = interrupt_save;
+    }
+
+    m_nestingCount = m_nestingCount + 1;
 }
 
 CriticalSection::~CriticalSection()
 {
-    unlock();
-}
+    m_nestingCount = m_nestingCount - 1;
 
-auto CriticalSection::lock() -> void
-{
-    if (not m_locked.test_and_set())
+    if (m_nestingCount == 0)
     {
         using namespace Native;
-        TX_DISABLE
-    }
-}
-
-auto CriticalSection::unlock() -> void
-{
-    if (m_locked.test())
-    {
-        Native::TX_RESTORE;
-        m_locked.clear();
+        TX_INTERRUPT_SAVE_AREA;
+        interrupt_save = m_savedInterruptState;
+        TX_RESTORE;
     }
 }
 
