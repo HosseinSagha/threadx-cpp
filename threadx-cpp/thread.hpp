@@ -155,7 +155,7 @@ template <StdAllocator Allocator> class Thread final : Native::TX_THREAD
     Allocator &m_allocator;
     const EntryCallback m_entryCallback;
     const NotifyCallback m_entryExitNotifyCallback;
-    BinarySemaphore *m_exitSignalPtr{};
+    volatile BinarySemaphore *m_exitSignalPtr{};
     Allocator::value_type *m_allocatedStackPtr{};
     Ulong m_allocatedStackSize{};
 }; // namespace ThreadX

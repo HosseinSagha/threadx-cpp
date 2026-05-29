@@ -40,8 +40,8 @@ class CriticalSection final
     CriticalSection &operator=(CriticalSection &&) = delete;
 
   private:
-    static inline Uint m_nestingCount;
-    static inline Uint m_savedInterruptState;
+    static inline Uint m_nestingCount{};
+    static inline Uint m_savedInterruptState{};
 };
 
 auto start() -> void;
