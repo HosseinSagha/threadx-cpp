@@ -21,21 +21,21 @@ include(FetchContent)
 find_package(Git REQUIRED)
 
 set(GITHUB_SUBDIR ../)
-fetchcontent_declare(toolchain-gnu
-        GIT_REPOSITORY ${GITHUB_SUBDIR}/toolchain-gnu.git
-        GIT_TAG origin/main
-        SYSTEM)
-fetchcontent_makeavailable(toolchain-gnu)
-fetchcontent_getproperties(toolchain-gnu SOURCE_DIR TOOLCHAIN_DIR)
+FetchContent_Declare(toolchain-gnu
+                     GIT_REPOSITORY ${GITHUB_SUBDIR}/toolchain-gnu.git
+                     GIT_TAG origin/main
+                     SYSTEM)
+FetchContent_MakeAvailable(toolchain-gnu)
+FetchContent_GetProperties(toolchain-gnu SOURCE_DIR TOOLCHAIN_DIR)
 
-fetchcontent_declare(stm32-svd
-        GIT_REPOSITORY ${GITHUB_SUBDIR}/stm32-svd.git
-        GIT_TAG origin/main
-        SYSTEM
-        EXCLUDE_FROM_ALL)
-fetchcontent_makeavailable(stm32-svd)
+FetchContent_Declare(stm32-svd
+                     GIT_REPOSITORY ${GITHUB_SUBDIR}/stm32-svd.git
+                     GIT_TAG origin/main
+                     SYSTEM
+                     EXCLUDE_FROM_ALL)
+FetchContent_MakeAvailable(stm32-svd)
 
-fetchcontent_getproperties(stm32-svd SOURCE_DIR SVD_DIR)
+FetchContent_GetProperties(stm32-svd SOURCE_DIR SVD_DIR)
 set(SVD_DIR ${SVD_DIR} CACHE PATH "Path to SVD directory" FORCE)
 
 # Set toolchain and project
@@ -48,21 +48,21 @@ if (NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE Release) # Default build type is release
 endif ()
 
-fetchcontent_declare(utility
-        GIT_REPOSITORY ${GITHUB_SUBDIR}/utility.git
-        GIT_TAG origin/main
-        SYSTEM)
+FetchContent_Declare(utility
+                     GIT_REPOSITORY ${GITHUB_SUBDIR}/utility.git
+                     GIT_TAG origin/main
+                     SYSTEM)
 
-fetchcontent_declare(segger-rtt
-        GIT_REPOSITORY ${GITHUB_SUBDIR}/segger-rtt.git
-        GIT_TAG origin/main
-        SYSTEM)
+FetchContent_Declare(segger-rtt
+                     GIT_REPOSITORY ${GITHUB_SUBDIR}/segger-rtt.git
+                     GIT_TAG origin/main
+                     SYSTEM)
 
-fetchcontent_makeavailable(utility segger-rtt)
+FetchContent_MakeAvailable(utility segger-rtt)
 
 add_compile_definitions(${MCU_LINE}
-        SYSTEM_CLOCK=16000000
-)
+                        SYSTEM_CLOCK=16000000
+                       )
 
 # Link libs and dirs
 set(LINK_DIRS ${PROJECT_SOURCE_DIR}/Middlewares/ST/ARM/DSP/Lib)
@@ -72,27 +72,26 @@ configure_file(${PROJECT_SOURCE_DIR}/fx_user.h.in ${CMAKE_BINARY_DIR}/fx_user.h)
 configure_file(${PROJECT_SOURCE_DIR}/lx_user.h.in ${CMAKE_BINARY_DIR}/lx_user.h)
 
 set(LIBS
-        stm32_hal_drivers
-        arm_cortexM4lf_math
-        threadx-cpp
-        utility
-        utility
-        segger-rtt
-)
+    stm32_hal_drivers
+    arm_cortexM4lf_math
+    threadx-cpp
+    utility
+    segger-rtt
+   )
 # Include directories
 set(SYS_INC_DIRS
-        ${PROJECT_SOURCE_DIR}/Middlewares/ST/ARM/DSP/Inc
-)
+    ${PROJECT_SOURCE_DIR}/Middlewares/ST/ARM/DSP/Inc
+   )
 
 set(INC_DIRS
-        ${PROJECT_SOURCE_DIR}
-)
+    ${PROJECT_SOURCE_DIR}
+   )
 
 # Find all source files
 configure_file(${PROJECT_SOURCE_DIR}/Core/Src/main.c main.cpp)
 file(GLOB USER_SRCS CONFIGURE_DEPENDS ${PROJECT_SOURCE_DIR}/*.cpp)
 file(GLOB CORE_SRCS CONFIGURE_DEPENDS ${PROJECT_SOURCE_DIR}/Core/Src/*.* ${PROJECT_BINARY_DIR}/*.cpp
-        ${CMAKE_SOURCE_DIR}/Core/ThreadSafe/*.c)
+     ${CMAKE_SOURCE_DIR}/Core/ThreadSafe/*.c)
 list(REMOVE_ITEM CORE_SRCS ${CMAKE_SOURCE_DIR}/Core/Src/main.c)
 set_source_files_properties(${CORE_SRCS} PROPERTIES COMPILE_FLAGS -w) # Disable warnings for system sources
 
@@ -130,14 +129,14 @@ target_link_libraries(${EXECUTABLE} PRIVATE ${LIBS} SRC_OBJS)
 
 # Target specific link options
 target_link_options(${EXECUTABLE} PRIVATE
-        ${LINKER_OPTS}
-        LINKER:-Map=${CMAKE_BINARY_DIR}/${EXEC_NAME}.map
-        -T${LINKER_SCRIPT}${EXEC_SUFFIX}.ld)
+                    ${LINKER_OPTS}
+                    LINKER:-Map=${CMAKE_BINARY_DIR}/${EXEC_NAME}.map
+                    -T${LINKER_SCRIPT}${EXEC_SUFFIX}.ld)
 
 # Print executable size and create hex and bin files
 add_custom_command(TARGET ${EXECUTABLE}
-        POST_BUILD
-        COMMAND ${CMAKE_SIZE_UTIL} ${EXECUTABLE}
-        COMMAND ${CMAKE_OBJCOPY} -O ihex ${EXECUTABLE} ${EXEC_NAME}.hex
-        COMMAND ${CMAKE_OBJCOPY} -O binary ${EXECUTABLE} ${EXEC_NAME}.bin
-        VERBATIM)
+                   POST_BUILD
+                   COMMAND ${CMAKE_SIZE_UTIL} ${EXECUTABLE}
+                   COMMAND ${CMAKE_OBJCOPY} -O ihex ${EXECUTABLE} ${EXEC_NAME}.hex
+                   COMMAND ${CMAKE_OBJCOPY} -O binary ${EXECUTABLE} ${EXEC_NAME}.bin
+                   VERBATIM)
