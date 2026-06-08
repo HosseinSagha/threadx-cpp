@@ -8,9 +8,6 @@
             "binaryDir": "${sourceDir}/build/${presetName}",
             "cacheVariables": {
                 "CMAKE_EXPORT_COMPILE_COMMANDS": "ON"
-            },
-            "warnings": {
-                "dev": false
             }
         },
         {
@@ -32,11 +29,11 @@
     ],
     "buildPresets": [
         {
-            "name": "debug",
+            "name": "Debug",
             "configurePreset": "debug"
         },
         {
-            "name": "release",
+            "name": "Release",
             "configurePreset": "release"
         }
     ]
