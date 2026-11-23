@@ -2,6 +2,8 @@
 
 #include "txCommon.hpp"
 
+#include <atomic>
+
 namespace ThreadX::Native
 {
 extern "C" {
@@ -32,7 +34,7 @@ class CriticalSection final
 {
   public:
     CriticalSection();
-    ~CriticalSection();
+    ~CriticalSection() noexcept;
 
     CriticalSection(const CriticalSection &) = delete;
     CriticalSection &operator=(const CriticalSection &) = delete;
@@ -40,7 +42,7 @@ class CriticalSection final
     CriticalSection &operator=(CriticalSection &&) = delete;
 
   private:
-    static inline Uint m_nestingCount{};
+    static inline std::atomic<Uint> m_nestingCount{};
     static inline Uint m_savedInterruptState{};
 };
 

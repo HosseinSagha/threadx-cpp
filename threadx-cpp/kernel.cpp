@@ -17,19 +17,18 @@ CriticalSection::CriticalSection()
     TX_INTERRUPT_SAVE_AREA;
     TX_DISABLE;
 
-    if (m_nestingCount == 0)
+    if (m_nestingCount.fetch_add(1) == 0)
     {
         m_savedInterruptState = interrupt_save;
     }
-
-    m_nestingCount = m_nestingCount + 1;
 }
 
-CriticalSection::~CriticalSection()
+CriticalSection::~CriticalSection() noexcept
 {
-    m_nestingCount = m_nestingCount - 1;
+    const auto previous{m_nestingCount.fetch_sub(1)};
+    assert(previous >= 1);
 
-    if (m_nestingCount == 0)
+    if (previous == 1)
     {
         using namespace Native;
         TX_INTERRUPT_SAVE_AREA;
