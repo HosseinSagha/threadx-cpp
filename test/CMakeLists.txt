@@ -39,7 +39,7 @@ FetchContent_GetProperties(stm32-svd SOURCE_DIR SVD_DIR)
 set(SVD_DIR ${SVD_DIR} CACHE PATH "Path to SVD directory" FORCE)
 
 # Set toolchain and project
-set(CMAKE_TOOLCHAIN_FILE ${TOOLCHAIN_DIR}/cortex-m4f.cmake)
+set(CMAKE_TOOLCHAIN_FILE ${TOOLCHAIN_DIR}/cortex-m4.cmake)
 project(${PROJECT_NAME}
         LANGUAGES C CXX ASM
         VERSION ${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_PATCH})
