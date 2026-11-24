@@ -33,7 +33,7 @@ enum class State
 class CriticalSection final
 {
   public:
-    CriticalSection();
+    explicit CriticalSection();
     ~CriticalSection() noexcept;
 
     CriticalSection(const CriticalSection &) = delete;
@@ -57,4 +57,49 @@ auto start() -> void;
 [[nodiscard]] auto inIsr() -> bool;
 
 [[nodiscard]] auto state() -> State;
+
+#if defined(__CORTEX_M)
+
+#if defined(__NVIC_PRIO_BITS)
+static constexpr auto basepriForMaxPreemptPrio(Uint maxPreemptPrio) -> Uint
+{
+    return (maxPreemptPrio + 1U) << (8U - __NVIC_PRIO_BITS);
+}
+#endif
+
+/// RAII-based priority-masked critical section for Cortex-M.
+/// Raises BASEPRI to mask interrupts at or below the given priority level while
+/// allowing higher-priority ISRs to run. Safe for nesting within a single thread:
+/// each instance saves and restores its own BASEPRI value in LIFO order.
+///
+/// \param basepriLevel Value written to BASEPRI (0 disables masking).
+///                     Interrupts with priority >= level are masked.
+///                     Use basepriForMaxPreemptPrio() to pre-shift the level
+///                     when __NVIC_PRIO_BITS is defined.
+///
+/// \warning BASEPRI is a per-core register shared by all threads on the core,
+///          not per-thread. Do not construct/destruct instances across thread
+///          boundaries or hold one across a yield/blocking call — interleaved
+///          lifetimes between threads corrupt the saved/restore state and leave
+///          the core at the wrong priority. For thread-to-thread mutual
+///          exclusion use a ThreadX mutex instead.
+class MaskedCriticalSection final
+{
+  public:
+    explicit MaskedCriticalSection(Uint basepriLevel);
+    ~MaskedCriticalSection() noexcept;
+
+    MaskedCriticalSection(const MaskedCriticalSection &) = delete;
+    MaskedCriticalSection &operator=(const MaskedCriticalSection &) = delete;
+    MaskedCriticalSection(MaskedCriticalSection &&) = delete;
+    MaskedCriticalSection &operator=(MaskedCriticalSection &&) = delete;
+
+  private:
+    static auto readBasepri() -> Uint;
+    static auto writeBasepri(Uint level) -> void;
+
+    Uint m_savedBasepri{};
+};
+
+#endif
 } // namespace ThreadX::Kernel

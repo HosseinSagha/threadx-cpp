@@ -59,4 +59,39 @@ auto state() -> State
     using namespace Native;
     return (TX_THREAD_GET_SYSTEM_STATE() < TX_INITIALIZE_IN_PROGRESS) ? State::running : State::uninitialised;
 }
+
+#if defined(__CORTEX_M)
+
+auto MaskedCriticalSection::readBasepri() -> Uint
+{
+#if defined(__GNUC__) || defined(__clang__)
+    Uint result{};
+    __asm volatile ("mrs %0, basepri" : "=r" (result));
+    return result;
+#else
+#error "MaskedCriticalSection requires GCC or Clang inline assembly for BASEPRI access"
+#endif
+}
+
+auto MaskedCriticalSection::writeBasepri(Uint level) -> void
+{
+#if defined(__GNUC__) || defined(__clang__)
+    __asm volatile ("msr basepri, %0" : : "r" (level) : "memory");
+#else
+#error "MaskedCriticalSection requires GCC or Clang inline assembly for BASEPRI access"
+#endif
+}
+
+MaskedCriticalSection::MaskedCriticalSection(Uint basepriLevel)
+    : m_savedBasepri(readBasepri())
+{
+    writeBasepri(basepriLevel);
+}
+
+MaskedCriticalSection::~MaskedCriticalSection() noexcept
+{
+    writeBasepri(m_savedBasepri);
+}
+
+#endif
 } // namespace ThreadX::Kernel
